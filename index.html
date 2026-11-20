@@ -1,0 +1,1666 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hiragana Trainer</title>
+<meta name="theme-color" content="#3446a6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Hiragana">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Layout: Seitenleiste links, Arbeitsfläche rechts über die volle Breite; Inhalte in mehrspaltigen Rastern */
+  --bg:#f3f4f7; --surface:#ffffff; --ink:#15171c; --muted:#646a78; --line:#e2e4ea;
+  --accent:#3446a6; --accent-soft:#e9ecf8; --on-accent:#ffffff;
+  --good:#22845a; --good-soft:#e1f2e9; --bad:#c23a2f; --bad-soft:#fbe8e6; --warn:#b7791f; --warn-soft:#fbf1dc;
+  --m0:#dde0e7; --m1:#e3ad37; --m2:#7b8de0; --m3:#2f9a66;
+  --font-ui:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-kana:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic","Noto Sans JP",sans-serif;
+  --r:14px; --side:236px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1115; --surface:#181b22; --ink:#eceef4; --muted:#9aa1b2; --line:#2a2f3a;
+    --accent:#8e9dff; --accent-soft:#232947; --on-accent:#0f1115;
+    --good:#4cc38a; --good-soft:#15342a; --bad:#ff7d70; --bad-soft:#3b1f1c; --warn:#f0b54a; --warn-soft:#3a2e15;
+    --m0:#2b303b; --m1:#d8a33a; --m2:#6f83e2; --m3:#3fb57c;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1115; --surface:#181b22; --ink:#eceef4; --muted:#9aa1b2; --line:#2a2f3a;
+  --accent:#8e9dff; --accent-soft:#232947; --on-accent:#0f1115;
+  --good:#4cc38a; --good-soft:#15342a; --bad:#ff7d70; --bad-soft:#3b1f1c; --warn:#f0b54a; --warn-soft:#3a2e15;
+  --m0:#2b303b; --m1:#d8a33a; --m2:#6f83e2; --m3:#3fb57c;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--font-ui);-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.kana{font-family:var(--font-kana)}
+.num{font-variant-numeric:tabular-nums}
+h1,h2,h3{margin:0;text-wrap:balance;letter-spacing:-.01em}
+h2{font-size:22px;font-weight:800}
+h3{font-size:15px;font-weight:700}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+
+/* App-Gerüst */
+.app{display:grid;grid-template-columns:var(--side) minmax(0,1fr);min-height:100%}
+aside{position:sticky;top:0;height:100vh;border-right:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;gap:22px;padding:22px 16px}
+.brand{display:flex;align-items:baseline;gap:8px;font-weight:800;font-size:17px;padding:0 8px}
+.brand .kana{font-size:22px;color:var(--accent);font-weight:700}
+nav{display:flex;flex-direction:column;gap:4px}
+nav button{display:flex;align-items:center;gap:12px;background:none;border:0;padding:10px 12px;border-radius:10px;color:var(--muted);font-weight:600;text-align:left}
+nav button svg{flex:none}
+nav button:hover{color:var(--ink);background:var(--bg)}
+nav button[aria-current="page"]{background:var(--accent-soft);color:var(--accent)}
+.side-foot{margin-top:auto;display:flex;flex-direction:column;gap:12px}
+.goal-mini{border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.goal-mini .mini{margin:0}
+.side-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 4px}
+.sync{font-size:12px;color:var(--muted)}
+.icon-btn{background:var(--surface);border:1px solid var(--line);border-radius:10px;width:38px;height:38px;display:grid;place-items:center;color:var(--muted);flex:none}
+.icon-btn:hover{color:var(--ink);border-color:var(--muted)}
+main{padding:28px clamp(18px,3vw,44px) 56px;min-width:0}
+.view{display:none}
+.view.on{display:block}
+@media (max-width:900px){
+  .app{grid-template-columns:1fr}
+  aside{position:sticky;height:auto;flex-direction:row;align-items:center;padding:10px 14px;gap:12px;z-index:5;border-right:0;border-bottom:1px solid var(--line);overflow-x:auto}
+  nav{flex-direction:row}
+  nav button{padding:8px 10px}
+  nav button span{display:none}
+  .side-foot{margin:0 0 0 auto;flex-direction:row;align-items:center}
+  .goal-mini,.sync{display:none}
+  .brand{white-space:nowrap;padding:0;font-size:15px}.brand .kana{font-size:18px}
+  .brand span:last-child{display:none}
+  aside{gap:8px;padding:8px 10px}nav{gap:2px}nav button{padding:8px}
+  main{padding-top:18px}
+}
+
+.stack{display:flex;flex-direction:column;gap:20px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px}
+.sec-title{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.btn{border:0;border-radius:11px;padding:11px 18px;font-weight:700;display:inline-flex;align-items:center;gap:8px;justify-content:center}
+.btn.primary{background:var(--accent);color:var(--on-accent)}
+.btn.light{background:var(--on-accent);color:var(--accent)}
+.btn.ghost{background:var(--surface);border:1px solid var(--line)}
+.btn.ghost:hover{border-color:var(--muted)}
+.btn.sm{padding:7px 12px;font-size:13px;border-radius:9px}
+.btn.danger{background:var(--bad);color:#fff}
+kbd{font:600 11px var(--font-ui);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 5px;background:var(--surface)}
+.kbd-inv{background:transparent;color:inherit;border-color:currentColor}
+.pill{font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap}
+.pill.hi{background:var(--bad-soft);color:var(--bad)}
+.pill.mid{background:var(--warn-soft);color:var(--warn)}
+.pill.lo{background:var(--good-soft);color:var(--good)}
+.pill.na{background:var(--bg);color:var(--muted)}
+.pill.ac{background:var(--accent-soft);color:var(--accent)}
+.mini{height:6px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:4px}
+.mini i{display:block;height:100%;border-radius:99px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.empty-note{color:var(--muted);font-size:14px;padding:6px 0}
+
+/* Übersicht */
+.home{display:grid;grid-template-columns:minmax(0,1fr) clamp(320px,26vw,420px);gap:22px;align-items:start}
+@media (max-width:1100px){.home{grid-template-columns:1fr}}
+.hero{display:flex;gap:20px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--accent);color:var(--on-accent);border:0;padding:26px 28px}
+.hero h2{font-size:24px}
+.hero p{margin:4px 0 0;opacity:.85}
+.groups{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 14px;font-weight:600;font-size:13.5px;display:inline-flex;gap:8px;align-items:center}
+.chip .kana{font-size:15px}
+.chip small{color:var(--muted);font-weight:500}
+.chip[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.chip[aria-pressed="true"] small{color:inherit;opacity:.75}
+.modes{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.mode{text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:6px;transition:border-color .15s,transform .15s;min-height:132px}
+.mode:hover:not(:disabled){border-color:var(--accent);transform:translateY(-1px)}
+.mode:disabled{opacity:.5;cursor:not-allowed}
+.mode .ico{font-family:var(--font-kana);font-size:22px;color:var(--accent);font-weight:700;height:30px}
+.mode b{font-size:15px}
+.mode span{font-size:13px;color:var(--muted)}
+.mode.feat{border-color:var(--accent);background:linear-gradient(var(--accent-soft),var(--surface) 70%)}
+.today{display:flex;gap:18px;align-items:center}
+.ring{position:relative;width:104px;height:104px;flex:none}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .lbl{position:absolute;inset:0;display:grid;place-items:center;text-align:center;line-height:1.1}
+.ring b{font-size:24px;display:block}
+.ring small{font-size:11.5px;color:var(--muted)}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;flex:1}
+.kpi b{font-size:20px;font-weight:700;display:block}
+.kpi span{font-size:12.5px;color:var(--muted)}
+.pairrow{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line);background:none;border-left:0;border-right:0;border-bottom:0;text-align:left;width:100%}
+.pairrow:first-of-type{border-top:0}
+.pairrow:hover .pk{color:var(--accent)}
+.pk{font-family:var(--font-kana);font-size:26px;white-space:nowrap}
+.pk em{font-style:normal;font-size:14px;color:var(--muted);margin:0 6px;font-family:var(--font-ui)}
+.pairrow .t{font-size:12.5px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.grp-bars{display:flex;flex-direction:column;gap:10px}
+.grp-bars .row{display:grid;grid-template-columns:110px 1fr 54px;gap:10px;align-items:center;font-size:13px}
+.stack-bar{display:flex;height:10px;border-radius:99px;overflow:hidden;background:var(--m0)}
+.stack-bar i{display:block;height:100%}
+
+/* Sitzung */
+.sessgrid{display:grid;grid-template-columns:minmax(0,1fr) clamp(300px,24vw,380px);gap:24px;height:calc(100vh - 84px);min-height:440px}
+@media (max-width:1000px){.sessgrid{grid-template-columns:1fr;min-height:0;height:auto}.qcard{min-height:300px!important}}
+.sess-main{display:flex;flex-direction:column;gap:16px;min-width:0}
+.sess-top{display:flex;align-items:center;gap:14px}
+.bar{flex:1;height:8px;background:var(--line);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .3s}
+.count{font-size:13px;color:var(--muted);min-width:70px;text-align:right}
+.qcard{flex:1;min-height:300px;background:var(--surface);border:1px solid var(--line);border-radius:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:32px;position:relative;transition:background .2s,border-color .2s}
+.qcard.ok{border-color:var(--good);background:var(--good-soft);animation:pop .25s}
+.qcard.no{border-color:var(--bad);background:var(--bad-soft);animation:shake .25s}
+.prompt{font-size:max(64px,min(14vw,24vh,190px));line-height:1.05;font-weight:500}
+.prompt.yo{font-size:max(56px,min(11vw,19vh,150px))}
+.prompt.romaji{font-family:var(--font-ui);font-size:clamp(64px,8vw,104px);font-weight:700;letter-spacing:-.02em}
+.qcard .tag{position:absolute;top:16px;left:18px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.qcard .spk{position:absolute;top:12px;right:12px}
+.reveal{font-size:26px;font-weight:700;min-height:36px}
+.opts{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.opts.n2{grid-template-columns:repeat(2,1fr)}.opts.n3{grid-template-columns:repeat(3,1fr)}
+@media (max-width:640px){.opts,.opts.n3{grid-template-columns:repeat(2,1fr)}}
+.opt{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 14px;font-size:22px;font-weight:700;display:flex;align-items:center;gap:10px;transition:border-color .15s;min-height:76px}
+.opt .k{font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:6px;width:22px;height:22px;display:grid;place-items:center;font-weight:600;flex:none}
+.opt .v{flex:1;text-align:center}
+.opt .v.kana{font-size:36px;font-weight:500;line-height:1.1}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt.ok{border-color:var(--good);background:var(--good-soft);color:var(--good)}
+.opt.no{border-color:var(--bad);background:var(--bad-soft);color:var(--bad)}
+.opt:disabled{cursor:default}
+.typerow{display:flex;gap:12px}
+.typerow input{flex:1;min-width:0;border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:16px;font-size:24px;font-weight:700;text-align:center}
+.typerow input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.sess-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;min-height:44px}
+.hint{font-size:12.5px;color:var(--muted)}
+.timer{font-size:13px;font-weight:700;min-width:54px;text-align:right}
+.sess-side{display:flex;flex-direction:column;gap:14px;min-width:0;overflow:auto;min-height:0}
+.sess-main{min-height:0}
+.cardbtns{height:68px}.cardbtns .btn{height:100%;padding-top:0;padding-bottom:0}
+.sess-main>.sess-foot{height:52px;min-height:52px;flex:none;flex-wrap:nowrap;overflow:visible;padding:0 3px}
+.sess-main>.sess-foot .hint{overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.sess-main>.opts,.sess-main>.typerow,.sess-main>.cardbtns,.sess-main>.sess-top{flex:none}
+.qcard{min-height:0!important;overflow:hidden}
+.typo-msg{color:var(--warn)!important;font-weight:600}
+.rd-typo{font-size:13px;font-weight:600;color:var(--warn)}
+@keyframes nudge{0%,100%{transform:translateX(0)}30%{transform:translateX(-4px)}70%{transform:translateX(4px)}}
+.typo-fx{animation:nudge .2s;border-color:var(--warn)!important;box-shadow:0 0 0 3px var(--warn-soft)!important}
+.sess-side .card{padding:16px}
+.live{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.live div b{display:block;font-size:20px}
+.live div span{font-size:12px;color:var(--muted)}
+.hist{display:flex;flex-wrap:wrap;gap:6px}
+.hist span{font-family:var(--font-kana);font-size:17px;min-width:34px;height:34px;padding:0 4px;display:grid;place-items:center;border-radius:8px}
+.hist .y{background:var(--good-soft);color:var(--good)}
+.hist .n{background:var(--bad-soft);color:var(--bad)}
+.cmp{display:flex;justify-content:center;gap:12px;align-items:stretch}
+.cmp div{flex:1;text-align:center;border-radius:12px;padding:10px 6px;border:1px solid var(--line)}
+.cmp .kana{font-size:52px;line-height:1.15;display:block}
+.cmp b{font-size:14px}
+.cmp .y{border-color:var(--good);background:var(--good-soft)}
+.cmp .n{border-color:var(--bad);background:var(--bad-soft)}
+.cmp small{display:block;font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.tiplist{display:flex;flex-direction:column;gap:10px}
+.tip{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;font-size:13px}
+.tip .pk{font-size:20px}
+.res{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.res-head{text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center}
+.res-big{font-size:64px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
+.tile b{display:block;font-size:22px}
+.tile span{font-size:12.5px;color:var(--muted)}
+.mistakes{display:flex;flex-wrap:wrap;gap:8px}
+.mk{display:flex;align-items:center;gap:8px;background:var(--bad-soft);color:var(--bad);border-radius:10px;padding:6px 10px;font-weight:700}
+.mk .kana{font-size:22px;color:var(--ink);font-weight:500}
+.row-btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.fmtbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.fmtseg{flex:1;min-width:280px;background:var(--surface)}
+.fmtseg button{display:flex;flex-direction:column;align-items:center;gap:0;padding:9px 8px;line-height:1.3}
+.fmtseg button b{font-size:13.5px}
+.fmtseg button small{font-size:11.5px;font-weight:500;opacity:.8}
+.fmtseg button+button{border-left:1px solid var(--line)}
+.mode .mfmt{margin-top:auto;padding-top:4px}
+.cardbtns{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cardbtns .flip{grid-column:1/-1;padding:20px;font-size:17px}
+.btn.rate{padding:20px;font-size:17px;border:1px solid}
+.btn.rate.no{background:var(--bad-soft);color:var(--bad);border-color:var(--bad)}
+.btn.rate.yes{background:var(--good-soft);color:var(--good);border-color:var(--good)}
+.btn.rate kbd{background:transparent;color:inherit;border-color:currentColor}
+.btn:disabled{opacity:.5;cursor:default}
+.kochpool{display:flex;flex-wrap:wrap;gap:5px}
+.kochpool span{font-size:18px;min-width:32px;height:32px;display:grid;place-items:center;border-radius:8px;background:var(--bg)}
+.kochpool span.new{background:var(--accent);color:var(--on-accent)}
+.kbar{position:relative;height:8px;background:var(--line);border-radius:99px;margin-top:6px}
+.kbar i{display:block;height:100%;border-radius:99px;transition:width .3s}
+.kbar span{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink);opacity:.5}
+.lesen{display:grid;grid-template-columns:250px minmax(0,1fr) clamp(280px,22vw,340px);gap:20px;align-items:start}
+.rside{position:sticky;top:20px;max-height:calc(100vh - 40px);overflow:auto;padding-bottom:2px}
+@media (max-width:1300px){.lesen{grid-template-columns:230px minmax(0,1fr)}.rside{grid-column:2;position:static;max-height:none}}
+@media (max-width:860px){.lesen{grid-template-columns:1fr}.rside{grid-column:auto}}
+.stlist{display:flex;flex-direction:column;gap:8px;position:sticky;top:20px;max-height:calc(100vh - 40px);overflow:auto;padding-right:2px}
+@media (max-width:860px){.stlist{position:static;max-height:none;flex-direction:row;overflow-x:auto}.stlist .st{min-width:200px}.stlist .sec-title{display:none}}
+.st{text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.st:hover{border-color:var(--muted)}
+.st.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.st-t{font-size:19px;font-weight:500}
+.st-d{font-size:12.5px;color:var(--muted)}
+.st-m{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:11.5px;margin-top:4px}
+.reader{padding:24px 28px;display:flex;flex-direction:column;gap:18px;min-width:0}
+.rd-head{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:flex-start}
+.rd-title{font-size:32px;font-weight:700;letter-spacing:0}
+.rdseg{min-width:300px}
+.rdseg button{display:flex;flex-direction:column;align-items:center;padding:8px 14px;line-height:1.3}
+.rdseg button small{font-size:11px;font-weight:500;opacity:.8}
+.rdseg button+button{border-left:1px solid var(--line)}
+.rd-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.sents{display:flex;flex-direction:column;gap:6px}
+.sent{display:grid;grid-template-columns:28px 1fr auto;gap:12px;align-items:start;padding:12px 10px;border-radius:12px}
+.sent.cur{background:var(--accent-soft)}
+.sn{font-size:12px;color:var(--muted);font-weight:700;padding-top:12px;text-align:right}
+.jp{display:flex;flex-wrap:wrap;align-items:flex-start;gap:4px 6px}
+.w{background:none;border:1px solid transparent;border-radius:9px;padding:2px 4px;display:flex;flex-direction:column;align-items:center}
+.w:hover{background:var(--bg)}
+.w .wk{font-size:30px;line-height:1.35}
+.w .wr{font-size:13px;font-weight:700;color:var(--accent);min-height:18px;visibility:hidden}
+.w .wr.on{visibility:visible}
+.w.sel{border-color:var(--accent);background:var(--accent-soft)}
+.w.cur{border-color:var(--accent);border-width:2px;background:var(--surface);box-shadow:0 0 0 3px var(--accent-soft)}
+.w.ok .wr{color:var(--good)}
+.w.no{background:var(--bad-soft)}
+.w.no .wr{color:var(--bad)}
+.pu{font-size:30px;line-height:1.35;color:var(--muted);margin-left:-8px;margin-right:-2px}
+.de{font-size:14px;color:var(--muted);margin-top:4px;display:none}
+.de.on{display:block}
+.sact{display:flex;gap:6px}
+.sact .icon-btn{width:34px;height:34px;font-size:11px;font-weight:800}
+.rd-in{position:sticky;bottom:12px;display:flex;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px;box-shadow:0 6px 24px rgba(0,0,0,.08);flex-wrap:wrap}
+.rd-fb{flex-basis:100%;font-size:14px;color:var(--bad);font-weight:600}
+.rd-in input:disabled{background:var(--bad-soft);border-color:var(--bad)}
+.rd-in input{flex:1;min-width:160px;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:12px 14px;font-size:20px;font-weight:700}
+.rd-in input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.rd-res{display:flex;flex-direction:column;gap:12px;background:var(--bg);border-radius:14px;padding:18px}
+.kchips{display:flex;flex-wrap:wrap;gap:5px}
+.kc{background:var(--bg);border:1px solid transparent;border-radius:8px;min-width:36px;padding:3px 5px 0;display:flex;flex-direction:column;align-items:center;overflow:hidden}
+.kc:hover:not(:disabled){border-color:var(--accent)}
+.kc .kana{font-size:19px;line-height:1.3}
+.kc i{display:block;height:3px;align-self:stretch;margin:2px -5px 0}
+.kc small{font-size:11px;font-weight:700;color:var(--accent);padding-bottom:3px}
+.kc:disabled{cursor:default}
+.winfo{display:flex;flex-direction:column;gap:6px}
+.wbig{font-size:48px;line-height:1.2}
+.wrom{font-size:20px;font-weight:800;color:var(--accent)}
+.lvbtn{cursor:help;border-bottom:1px dotted transparent}
+.lvwrap.open .lvbtn,.lvbtn:hover{color:var(--ink);border-bottom-color:var(--muted)}
+.stairs{display:flex;align-items:stretch;gap:4px;flex-wrap:wrap}
+.stairs>div{flex:1;min-width:80px;border:1px solid var(--line);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:2px;font-size:12.5px;opacity:.6}
+.stairs>div.on{opacity:1;border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.stairs i{width:100%;height:4px;border-radius:2px;display:block;margin-bottom:4px}
+.stairs small{color:var(--muted);font-size:11px}
+.stairs .arr{align-self:center;color:var(--muted);font-size:12px}
+.lvhow{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.lvwrap{display:inline-flex}
+.lvpop{display:none;position:fixed;z-index:25;width:400px;max-width:calc(100vw - 16px);overflow:auto}
+.lvwrap.open .lvpop{display:block}
+.lvpop-in{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.14);padding:16px;display:flex;flex-direction:column;gap:12px;color:var(--ink);font-size:13.5px;font-weight:400;text-align:left}
+.lvpop-in p{margin:0}
+.lvpop-in .lvhow{font-size:13px}
+.lvpop-in .stairs>div{min-width:0;padding:7px 6px}
+.lvpop-in .stairs b{font-size:11.5px}
+input[type=range]{width:100%;accent-color:var(--accent);height:22px;cursor:pointer}
+.kochprev{display:flex;flex-wrap:wrap;gap:4px}
+.kochprev span{min-width:28px;height:28px;display:grid;place-items:center;border-radius:7px;background:var(--bg);font-size:16px;color:var(--muted)}
+.kochprev span.on{background:var(--accent-soft);color:var(--accent)}
+.kochprev span.more{background:none}
+.tblhead{display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+.tblseg{min-width:260px}
+.tblseg button+button,.setgrid .seg button+button{border-left:1px solid var(--line)}
+.ktable.rp .cell{padding-top:17px}
+.cell .reps{position:absolute;top:5px;left:7px;font-size:10.5px;font-weight:700;color:var(--muted)}
+.dlg.wide{max-width:min(940px,calc(100vw - 32px))}
+.setgrid{display:grid;grid-template-columns:1fr 1fr;gap:20px 32px}
+@media (max-width:760px){.setgrid{grid-template-columns:1fr}}
+.setcol{display:flex;flex-direction:column;gap:16px;min-width:0}
+.setcol h4{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+@media (max-width:700px){.tblhead{align-items:flex-start}}
+/* Intro-Animation */
+#intro{position:fixed;inset:0;z-index:100;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;overflow:hidden;clip-path:inset(0 0 0 0);transition:clip-path .65s cubic-bezier(.7,0,.25,1)}
+#intro.out{clip-path:inset(0 0 100% 0)}
+#intro .i-grid{position:absolute;inset:-20px;-webkit-mask-image:radial-gradient(ellipse at center,transparent 0 18%,#000 48%);mask-image:radial-gradient(ellipse at center,transparent 0 18%,#000 48%);display:grid;grid-template-columns:repeat(var(--cols),1fr);place-items:center;font-family:var(--font-kana);font-size:26px}
+#intro .i-grid span{opacity:0;animation:iGrid 2.8s var(--d) both ease-out}
+@keyframes iGrid{0%{opacity:0;transform:translateY(14px) scale(.8)}25%{opacity:.22;transform:none}70%{opacity:.12}100%{opacity:.06}}
+#intro .i-center{position:relative;display:flex;flex-direction:column;align-items:center;gap:14px}
+#intro .i-word{display:flex;gap:clamp(6px,1.4vw,18px)}
+#intro .i-ch{display:flex;flex-direction:column;align-items:center;font-family:var(--font-kana);font-weight:700;font-size:clamp(64px,11vw,140px);line-height:1;opacity:0;animation:iCh .7s var(--d) both cubic-bezier(.2,.9,.25,1.25)}
+@keyframes iCh{0%{opacity:0;transform:translateY(30px) scale(.4) rotate(-10deg);filter:blur(10px)}100%{opacity:1;transform:none;filter:blur(0)}}
+#intro .i-ch small{font-family:var(--font-ui);font-size:clamp(13px,1.6vw,18px);font-weight:700;letter-spacing:.08em;margin-top:10px;opacity:0;animation:iRo 1.6s calc(var(--d) + .3s) both}
+@keyframes iRo{0%{opacity:0;transform:translateY(-6px)}25%,70%{opacity:.85;transform:none}100%{opacity:0}}
+#intro .i-line{height:3px;width:0;background:currentColor;border-radius:3px;animation:iLine .6s 1.35s both cubic-bezier(.6,0,.2,1)}
+@keyframes iLine{to{width:min(70vw,520px)}}
+#intro .i-sub{font-weight:800;font-size:clamp(18px,2.4vw,28px);text-transform:uppercase;opacity:0;animation:iSub .8s 1.6s both ease-out}
+@keyframes iSub{0%{opacity:0;letter-spacing:.9em}100%{opacity:1;letter-spacing:.32em}}
+#intro .i-skip{position:absolute;right:20px;bottom:18px;background:none;border:1px solid currentColor;color:inherit;border-radius:99px;padding:6px 14px;font-size:12.5px;font-weight:600;opacity:.7}
+#intro .i-skip:hover{opacity:1}
+@media (prefers-reduced-motion:reduce){#intro *{animation:none!important;opacity:1!important}#intro .i-grid{display:none}#intro .i-line{width:min(70vw,520px)}#intro .i-ch small{opacity:.85!important}}
+@media (max-width:1000px){.prompt{font-size:max(110px,min(30vw,22vh))}.prompt.yo{font-size:max(84px,min(22vw,17vh))}.prompt.romaji{font-size:max(56px,min(16vw,12vh))}}
+@media (hover:none){.sess-foot .hint kbd,.opt .k,.btn kbd{display:none}}
+.bktxt{width:100%;min-height:160px;border:1px solid var(--line);border-radius:10px;padding:10px;font:12px/1.4 ui-monospace,monospace;background:var(--bg);color:var(--ink);resize:vertical}
+.intro-tag{font-size:12px;font-weight:700;color:var(--accent);background:var(--accent-soft);padding:4px 10px;border-radius:99px}
+
+/* Ähnlichkeiten */
+.pairs{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.paircard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:10px}
+.paircard .duo{display:flex;align-items:center;justify-content:center;gap:18px}
+.paircard .duo div{text-align:center}
+.paircard .duo .kana{font-size:52px;line-height:1.1;display:block}
+.paircard .duo b{font-size:13px;color:var(--muted)}
+.paircard .vs{color:var(--muted);font-weight:700}
+.paircard p{margin:0;font-size:13px;color:var(--muted);flex:1}
+.paircard .ft{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.cgroups{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:14px;align-items:start}
+.cg{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:14px}
+.cg-head{display:flex;justify-content:space-between;gap:10px;align-items:start}
+.cg-head p{margin:4px 0 0;font-size:13px;color:var(--muted)}
+.cg-k{display:flex;flex-wrap:wrap;gap:8px}
+.cg-k button{background:var(--bg);border:1px solid transparent;border-radius:12px;min-width:62px;padding:8px 8px 0;display:flex;flex-direction:column;align-items:center;overflow:hidden;position:relative}
+.cg-k button:hover{border-color:var(--accent)}
+.cg-k .kana{font-size:32px;line-height:1.15}
+.cg-k small{font-size:11.5px;color:var(--muted);font-weight:600;margin-bottom:7px}
+.cg-k .mb{position:absolute;left:0;right:0;bottom:0;height:3px}
+.cg .ft{display:flex;justify-content:space-between;align-items:center;gap:8px;border-top:1px solid var(--line);padding-top:12px}
+details.tips summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--accent);list-style:none}
+details.tips summary::-webkit-details-marker{display:none}
+details.tips[open] summary{margin-bottom:10px}
+.filters{display:flex;gap:8px;flex-wrap:wrap}
+
+/* Tabelle */
+.tables{display:grid;grid-template-columns:5fr 5fr 3fr;gap:28px;align-items:start}
+@media (max-width:1250px){.tables{grid-template-columns:1fr 1fr}.tables>div:last-child{grid-column:1/-1}}
+@media (max-width:700px){.tables{grid-template-columns:1fr}}
+.ktable{display:grid;gap:8px}
+.ktable.c5{grid-template-columns:repeat(5,1fr)}
+.ktable.c3{grid-template-columns:repeat(3,1fr)}
+.cell{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 4px 0;display:flex;flex-direction:column;align-items:center;overflow:hidden;position:relative;min-height:82px}
+.cell:hover{border-color:var(--accent)}
+.cell .kana{font-size:30px;line-height:1.15}
+.cell small{font-size:12px;color:var(--muted);font-weight:600;margin-bottom:8px}
+.cell .mb{position:absolute;left:0;right:0;bottom:0;height:4px}
+.cell .warn{position:absolute;top:5px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--bad)}
+.cell.empty{visibility:hidden}
+.cell.inactive{opacity:.45}
+
+/* Statistik */
+.stat-tiles{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
+@media (max-width:1100px){.stat-tiles{grid-template-columns:repeat(3,1fr)}}
+.srow{display:grid;grid-template-columns:minmax(0,2fr) minmax(280px,1fr);gap:18px;align-items:stretch}
+.srow>.card{display:flex;flex-direction:column}
+.masonry{columns:3 300px;column-gap:18px}
+.masonry>.card{break-inside:avoid;margin-bottom:18px;display:block}
+.lv4{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.lvi{display:grid;grid-template-columns:12px 1fr auto;gap:8px;align-items:center;background:var(--bg);border-radius:9px;padding:7px 10px;font-size:13px}
+@media (max-width:1000px){.srow{grid-template-columns:1fr}}
+@media (max-width:700px){.stat-tiles{grid-template-columns:1fr 1fr}}
+.list{display:flex;flex-direction:column}
+.li{display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}
+.li:first-child{border-top:0}
+.li .kana{font-size:26px;text-align:center}
+.chart svg{width:100%;height:auto;display:block}
+.chart text{fill:var(--muted);font:11px var(--font-ui)}
+.heat{display:grid;grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:5px}
+.hc{aspect-ratio:1;border-radius:8px;display:grid;place-items:center;font-size:19px;border:1px solid var(--line)}
+.rowacc{display:grid;grid-template-columns:70px 1fr 48px;gap:10px;align-items:center;font-size:13px;padding:4px 0}
+
+/* Dialog */
+.modal{position:fixed;inset:0;background:rgba(10,12,18,.45);display:none;align-items:center;justify-content:center;z-index:20;padding:16px}
+.modal.on{display:flex}
+.dlg{background:var(--surface);border-radius:18px;max-width:560px;width:100%;padding:22px;display:flex;flex-direction:column;gap:16px;max-height:90vh;overflow:auto;border:1px solid var(--line)}
+.dlg-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.field{display:flex;flex-direction:column;gap:8px}
+.field label{font-weight:700;font-size:13.5px}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{flex:1;border:0;background:none;padding:8px;font-weight:600;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
+.switch{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.switch input{width:20px;height:20px;accent-color:var(--accent)}
+.detail{display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:center}
+.detail-k{font-size:96px;line-height:1.1;padding:0 10px}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kv div{background:var(--bg);border-radius:10px;padding:10px 12px}
+.kv b{display:block;font-size:18px}
+.kv span{font-size:12px;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;font-size:14px;opacity:0;pointer-events:none;transition:all .25s;z-index:30}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+@keyframes pop{0%{transform:scale(.97)}60%{transform:scale(1.01)}100%{transform:scale(1)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside>
+  <div class="brand"><span class="kana">ひらがな</span><span>Trainer</span></div>
+  <nav aria-label="Hauptnavigation">
+    <button data-nav="ueben"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4l14 8-14 8z"/></svg><span>Üben</span></button>
+    <button data-nav="aehnlich"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="8.5" cy="12" r="5.5"/><circle cx="15.5" cy="12" r="5.5"/></svg><span>Ähnlichkeiten</span></button>
+    <button data-nav="tabelle"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Tabelle</span></button>
+    <button data-nav="lesen"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5h6a4 4 0 0 1 4 4v11a3 3 0 0 0-3-3H2z"/><path d="M22 5h-6a4 4 0 0 0-4 4v11a3 3 0 0 1 3-3h7z"/></svg><span>Lesen</span></button>
+    <button data-nav="statistik"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Statistik</span></button>
+  </nav>
+  <div class="side-foot">
+    <div class="goal-mini" id="goalMini"></div>
+    <div class="side-row"><span class="sync" id="sync">Lokal gespeichert</span>
+      <button class="icon-btn" id="openSettings" aria-label="Einstellungen" title="Einstellungen"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+    </div>
+  </div>
+</aside>
+<main>
+  <section class="view on" id="v-ueben"></section>
+  <section class="view" id="v-session"></section>
+  <section class="view" id="v-aehnlich"></section>
+  <section class="view" id="v-tabelle"></section>
+  <section class="view" id="v-lesen"></section>
+  <section class="view" id="v-statistik"></section>
+</main>
+</div>
+<div class="modal" id="modal" role="dialog" aria-modal="true"><div class="dlg" id="dlg"></div></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+"use strict";
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const MIN=60e3,HOUR=36e5,DAY=864e5;
+const INT=[0,10*MIN,HOUR,DAY,3*DAY,7*DAY,21*DAY];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ---------- Zeichendaten ---------- */
+const ROWS=[
+ {id:"a",g:"basic",items:"あ:a い:i う:u え:e お:o"},
+ {id:"k",g:"basic",items:"か:ka き:ki く:ku け:ke こ:ko"},
+ {id:"s",g:"basic",items:"さ:sa し:shi す:su せ:se そ:so"},
+ {id:"t",g:"basic",items:"た:ta ち:chi つ:tsu て:te と:to"},
+ {id:"n",g:"basic",items:"な:na に:ni ぬ:nu ね:ne の:no"},
+ {id:"h",g:"basic",items:"は:ha ひ:hi ふ:fu へ:he ほ:ho"},
+ {id:"m",g:"basic",items:"ま:ma み:mi む:mu め:me も:mo"},
+ {id:"y",g:"basic",items:"や:ya ゆ:yu よ:yo"},
+ {id:"r",g:"basic",items:"ら:ra り:ri る:ru れ:re ろ:ro"},
+ {id:"w",g:"basic",items:"わ:wa を:wo"},
+ {id:"nn",g:"basic",items:"ん:n"},
+ {id:"g",g:"daku",items:"が:ga ぎ:gi ぐ:gu げ:ge ご:go"},
+ {id:"z",g:"daku",items:"ざ:za じ:ji ず:zu ぜ:ze ぞ:zo"},
+ {id:"d",g:"daku",items:"だ:da ぢ:ji づ:zu で:de ど:do"},
+ {id:"b",g:"daku",items:"ば:ba び:bi ぶ:bu べ:be ぼ:bo"},
+ {id:"p",g:"daku",items:"ぱ:pa ぴ:pi ぷ:pu ぺ:pe ぽ:po"},
+ {id:"ky",g:"yoon",items:"きゃ:kya きゅ:kyu きょ:kyo"},
+ {id:"sh",g:"yoon",items:"しゃ:sha しゅ:shu しょ:sho"},
+ {id:"ch",g:"yoon",items:"ちゃ:cha ちゅ:chu ちょ:cho"},
+ {id:"ny",g:"yoon",items:"にゃ:nya にゅ:nyu にょ:nyo"},
+ {id:"hy",g:"yoon",items:"ひゃ:hya ひゅ:hyu ひょ:hyo"},
+ {id:"my",g:"yoon",items:"みゃ:mya みゅ:myu みょ:myo"},
+ {id:"ry",g:"yoon",items:"りゃ:rya りゅ:ryu りょ:ryo"},
+ {id:"gy",g:"yoon",items:"ぎゃ:gya ぎゅ:gyu ぎょ:gyo"},
+ {id:"j",g:"yoon",items:"じゃ:ja じゅ:ju じょ:jo"},
+ {id:"by",g:"yoon",items:"びゃ:bya びゅ:byu びょ:byo"},
+ {id:"py",g:"yoon",items:"ぴゃ:pya ぴゅ:pyu ぴょ:pyo"}
+];
+const GROUPS={basic:{name:"Grundzeichen",ex:"あ"},daku:{name:"Dakuten",ex:"が"},yoon:{name:"Yōon",ex:"きゃ"}};
+const LABEL={"ぢ":"ji (di)","づ":"zu (du)"};
+const ALT={shi:["si"],chi:["ti"],tsu:["tu"],fu:["hu"],ji:["zi"],wo:["o"],n:["nn"],sha:["sya"],shu:["syu"],sho:["syo"],cha:["tya","cya"],chu:["tyu","cyu"],cho:["tyo","cyo"],ja:["zya","jya"],ju:["zyu","jyu"],jo:["zyo","jyo"]};
+const KALT={"ぢ":["ji","di","dji"],"づ":["zu","du","dzu"]};
+
+/* Verwechslungsgruppen mit Unterscheidungstipps */
+const CONF=[
+ {id:"schlinge",t:"Schlingen und Bögen",k:"ぬ め の あ お",d:"Runde Formen mit Kreuzungen. Achte auf das Strichende und auf Punkte.",tips:{
+  "ぬ|め":"ぬ endet unten rechts mit einer kleinen Schlinge, め läuft offen aus.",
+  "あ|お":"あ hat einen senkrechten Strich, der den Querstrich kreuzt. お hat stattdessen einen Punkt oben rechts.",
+  "の|め":"の ist ein einziger Strich ohne Kreuzung. め hat zusätzlich einen schrägen Strich links.",
+  "あ|め":"あ hat oben einen waagerechten Querstrich, め nicht.",
+  "ぬ|の":"の hat weder Kreuzung noch Schlinge am Ende.",
+  "あ|ぬ":"ぬ hat keinen waagerechten Querstrich, dafür eine Schlinge am Ende.",
+  "お|の":"お hat einen Querstrich und einen Punkt, の ist ein einziger Bogen.",
+  "あ|の":"あ hat Querstrich und senkrechten Strich, の nur den Bogen.",
+  "ぬ|お":"お hat einen Punkt oben rechts und keine Schlinge.",
+  "め|お":"お hat einen Querstrich und einen Punkt, め zwei gekreuzte Striche."}},
+ {id:"links",t:"Gleicher Strich links",k:"ね れ わ",d:"Alle drei beginnen mit demselben senkrechten Strich. Nur das Ende rechts unterscheidet sie.",tips:{
+  "ね|れ":"ね endet mit einer Schlinge, れ mit einem nach außen geschwungenen Bein.",
+  "ね|わ":"ね endet mit einer Schlinge, わ mit einem runden Bogen nach innen.",
+  "れ|わ":"れ knickt am Ende nach außen ab wie ein Bein, わ schließt mit einem runden Bauch."}},
+ {id:"ruro",t:"Mit oder ohne Schlinge",k:"る ろ",d:"Gleiche Grundform, nur das Strichende ist anders.",tips:{
+  "る|ろ":"る hat unten eine kleine Schlinge, ろ endet offen. Merkhilfe: ru wie „Rolle“."}},
+ {id:"sachi",t:"Querstrich mit Bogen",k:"さ ち き ら",d:"Querstriche oben, Bogen unten. Zähle die Querstriche und schau, wohin der Bogen zeigt.",tips:{
+  "さ|ち":"ち sieht aus wie eine 5: Der Bogen hängt am Strich und wölbt sich nach rechts. Bei さ ist der untere Bogen abgesetzt und öffnet sich nach rechts wie ein c.",
+  "き|さ":"き hat zwei Querstriche, さ nur einen.",
+  "き|ち":"き hat zwei Querstriche und einen abgesetzten Bogen, ち einen Querstrich und einen angehängten Bogen.",
+  "ち|ら":"ら hat oben nur einen kurzen schrägen Strich, keinen kreuzenden Querstrich.",
+  "さ|ら":"ら hat keinen kreuzenden Querstrich, der Bogen setzt an einer senkrechten Linie an.",
+  "き|ら":"き hat zwei Querstriche mit Kreuzung, ら nur einen kleinen Strich oben."}},
+ {id:"ha",t:"Senkrechter Strich links",k:"は ほ け に ま",d:"Links steht ein senkrechter Strich. Rechts entscheiden Querstriche und Schlinge.",tips:{
+  "は|ほ":"ほ hat oben einen zusätzlichen Querstrich, der rechte Teil ist oben geschlossen. は hat nur einen Querstrich.",
+  "け|は":"け endet rechts mit einem langen Strich ohne Schlinge, は hat unten eine Schlinge.",
+  "に|は":"に hat rechts zwei kurze waagerechte Striche wie こ, keine Schlinge.",
+  "け|に":"け hat rechts einen langen senkrechten Strich, に zwei kurze waagerechte.",
+  "ほ|ま":"ま hat keinen senkrechten Strich links. ほ ist は mit einem zusätzlichen Querstrich.",
+  "は|ま":"ま hat keinen Strich links, dafür zwei Querstriche.",
+  "け|ほ":"ほ hat zwei Querstriche und eine Schlinge, け keines davon.",
+  "に|ほ":"ほ hat unten eine Schlinge, に nicht.",
+  "け|ま":"ま hat zwei Querstriche und eine Schlinge, aber keinen Strich links.",
+  "に|ま":"に hat links einen senkrechten Strich, ま nicht."}},
+ {id:"ii",t:"Zwei kurze Striche",k:"い り こ に",d:"Paare aus zwei Strichen. Richtung und Länge machen den Unterschied.",tips:{
+  "い|り":"い: zwei Striche, der rechte ist kürzer. り: Der rechte Strich ist lang und nach unten gezogen.",
+  "い|こ":"い steht senkrecht, こ liegt waagerecht.",
+  "こ|に":"に hat zusätzlich einen senkrechten Strich links.",
+  "こ|り":"り steht senkrecht, こ liegt waagerecht.",
+  "い|に":"に hat rechts zwei waagerechte Striche, い zwei senkrechte.",
+  "に|り":"に hat rechts zwei waagerechte Striche, り einen langen senkrechten."}},
+ {id:"u",t:"Ein großer Bogen",k:"う ら つ",d:"Der Bogen ist ähnlich. Entscheidend ist, was davor kommt.",tips:{
+  "う|つ":"う hat oben einen kurzen Strich, つ ist nur der Bogen.",
+  "う|ら":"う: kurzer waagerechter Strich oben, Bogen beginnt oben. ら: schräger Strich oben, der Bogen beginnt mit einer senkrechten Linie links.",
+  "つ|ら":"つ ist ein einzelner liegender Bogen, ら hat einen Strich oben und eine senkrechte Linie."}},
+ {id:"shi",t:"Ein einzelner Strich",k:"し つ く へ",d:"Alle bestehen aus einem Strich. Achte auf die Richtung.",tips:{
+  "し|つ":"し läuft senkrecht nach unten und biegt nach rechts ab. つ liegt waagerecht und biegt nach unten.",
+  "く|し":"く ist ein spitzer Winkel nach links wie <, し ein runder Haken.",
+  "く|へ":"く zeigt nach links wie <, へ ist ein flaches Dach wie ^.",
+  "し|へ":"し steht senkrecht, へ ist ein Dach.",
+  "く|つ":"つ ist rund und liegt waagerecht, く ist spitz.",
+  "つ|へ":"つ ist nach unten gewölbt, へ spitz nach oben."}},
+ {id:"te",t:"Waagerechter Start",k:"て そ と",d:"Ähnlich geschwungen, aber unterschiedlich viele Striche und Zacken.",tips:{
+  "そ|て":"そ beginnt mit einem Zickzack, て mit einem einzigen Querstrich.",
+  "て|と":"と besteht aus zwei Strichen: ein kurzer schräger oben, dann ein Bogen. て ist ein einziger Strich.",
+  "そ|と":"そ hat oben einen Zickzack, と einen kurzen schrägen Strich."}},
+ {id:"tana",t:"Kreuz links",k:"た な",d:"Beide beginnen mit demselben Kreuz.",tips:{
+  "た|な":"た hat rechts zwei Striche wie こ. な hat rechts einen Punkt und unten eine Schlinge."}},
+ {id:"su",t:"Schlinge in der Mitte",k:"す む お",d:"Die Schlinge sitzt bei allen drei an einer anderen Stelle.",tips:{
+  "す|む":"す: Kreuz mit Schlinge in der Mitte, endet senkrecht. む: Schlinge links, endet mit Haken nach rechts und hat einen Punkt.",
+  "お|す":"お hat einen Punkt oben rechts und einen runden Bauch, す keinen Punkt.",
+  "お|む":"Beide haben einen Punkt. お hat oben ein Kreuz, む eine Schlinge links und einen Haken nach rechts."}},
+ {id:"ma",t:"Querstriche mit Schlinge",k:"ま も よ",d:"Zähle die Querstriche und prüfe, ob der senkrechte Strich oben übersteht.",tips:{
+  "ま|も":"Bei ま ragt der senkrechte Strich oben heraus und endet mit einer Schlinge. Bei も schließt er oben bündig und endet mit einem Haken nach rechts.",
+  "ま|よ":"ま hat zwei Querstriche, よ nur einen kurzen auf der rechten Seite.",
+  "も|よ":"よ hat unten eine Schlinge, も einen offenen Haken."}},
+ {id:"yu",t:"Y-Laute",k:"や ゆ よ",d:"Häufige Zeichen, die klein auch in den Yōon-Formen auftauchen.",tips:{
+  "ゆ|よ":"ゆ hat einen großen runden Bogen mit Strich in der Mitte, よ einen kurzen Querstrich und eine Schlinge.",
+  "や|ゆ":"や hat einen kurzen Haken und einen langen schrägen Strich, ゆ einen geschlossenen Bogen.",
+  "や|よ":"よ hat unten eine Schlinge, や nicht."}},
+ {id:"en",t:"Welle nach rechts",k:"え ん そ",d:"Alle drei laufen in einer Welle nach rechts aus.",tips:{
+  "え|ん":"え hat oben einen kurzen Strich, ん nicht. ん sieht aus wie ein handgeschriebenes n.",
+  "え|そ":"そ beginnt mit einem Zickzack, え mit einem Punkt und einem Querstrich.",
+  "そ|ん":"そ hat oben einen Zickzack, ん beginnt mit einem langen schrägen Strich."}},
+ {id:"daku",t:"゛ oder ゜",k:"ば ぱ び ぴ ぶ ぷ べ ぺ ぼ ぽ",d:"Zwei Striche (゛ Dakuten) machen aus h ein b, der kleine Kreis (゜ Handakuten) macht daraus ein p.",tips:{}},
+ {id:"same",t:"Gleicher Laut",k:"じ ぢ ず づ",d:"じ und ぢ klingen beide wie „ji“, ず und づ wie „zu“. ぢ und づ sind selten und stehen meist, wenn ち oder つ stimmhaft werden, etwa in つづく.",tips:{
+  "じ|ぢ":"じ ist stimmhaftes し, ぢ stimmhaftes ち. Die Aussprache ist gleich.",
+  "ず|づ":"ず ist stimmhaftes す, づ stimmhaftes つ. Die Aussprache ist gleich."}},
+ {id:"yoon",t:"Kleines ゃ ゅ ょ",k:"きゃ きゅ きょ しゃ しゅ しょ りゃ りゅ りょ",d:"Das kleine Zeichen bestimmt den Vokal: ゃ = a, ゅ = u, ょ = o. ゅ hat einen Bogen mit Strich, ょ einen Querstrich mit Schlinge.",tips:{}}
+];
+CONF.forEach(c=>c.k=c.k.split(" "));
+const ITEMS=[];
+ROWS.forEach(row=>row.items.split(" ").forEach(p=>{const [k,r]=p.split(":");const v="aiueo".includes(r.slice(-1))?r.slice(-1):"";ITEMS.push({k,r,row:row.id,g:row.g,v,lbl:LABEL[k]||r})}));
+const BYK=Object.fromEntries(ITEMS.map(i=>[i.k,i]));
+const SIM={},CGOF={};
+CONF.forEach(c=>c.k.forEach(a=>{(CGOF[a]=CGOF[a]||[]).push(c);SIM[a]=SIM[a]||new Set();c.k.forEach(b=>b!==a&&SIM[a].add(b))}));
+const base=k=>k.normalize("NFD").replace(/[゙゚]/g,"").normalize("NFC");
+const pkey=(a,b)=>[a,b].sort().join("|");
+const TIPS={};CONF.forEach(c=>Object.entries(c.tips).forEach(([p,t])=>{const [a,b]=p.split("|");TIPS[pkey(a,b)]=t}));
+function pairTip(a,b){
+  const t=TIPS[pkey(a,b)];if(t)return t;
+  if(base(a)===base(b)&&a!==b){const m=x=>/゚/.test(x.normalize("NFD"))?"゜ (p)":/゙/.test(x.normalize("NFD"))?"゛ (stimmhaft)":"ohne Zeichen";return `Gleiche Grundform ${base(a)}. ${a}: ${m(a)}, ${b}: ${m(b)}.`}
+  if(a.length===2&&b.length===2&&a[0]===b[0])return "Gleicher Anfang. Das kleine Zeichen entscheidet: ゃ = a, ゅ = u, ょ = o.";
+  if(a.length===2&&b.length===2&&a[1]===b[1])return `Gleicher Vokal, aber anderes erstes Zeichen: ${a[0]} gegen ${b[0]}.`;
+  return "";
+}
+const pairText=(a,b)=>pairTip(a,b)||`Kein klassisches Paar, aber für dich eine Falle: ${a} = ${BYK[a].lbl}, ${b} = ${BYK[b].lbl}.`;
+const accepts=i=>KALT[i.k]||[i.r,...(ALT[i.r]||[])];
+const rowName=id=>ROWS.find(x=>x.id===id).items.split(" ")[0].split(":")[0]+"-Reihe";
+
+/* ---------- Zustand ---------- */
+const LS="hiragana-trainer-v1";
+const fresh=()=>({v:1,updated:0,kana:{},days:{},best:{sprint:0},sessions:0,totalMs:0,stories:{},koch:{lvl:2,win:[]},settings:{groups:{basic:true,daku:false,yoon:false},goal:40,newPer:5,autoSpeak:false,format:"mc",theme:"auto",kochOrder:"row",kochWin:20,tableMode:"level"}});
+let S=fresh();
+try{const raw=localStorage.getItem(LS);if(raw)S=merge(JSON.parse(raw))}catch(e){}
+function merge(o){const f=fresh();o=o||{};return {...f,...o,best:{...f.best,...(o.best||{})},settings:{...f.settings,...(o.settings||{}),groups:{...f.settings.groups,...((o.settings||{}).groups||{})}},kana:o.kana||{},days:o.days||{},stories:o.stories||{},koch:{...f.koch,...(o.koch||{})}}}
+const ks=k=>S.kana[k]||(S.kana[k]={n:0,c:0,b:0,d:0,ms:0,l:0,st:0,cf:{}});
+const dayKey=(t=Date.now())=>{const d=new Date(t);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+const level=k=>{const s=S.kana[k];if(!s||!s.n)return 0;if(s.b<=2)return 1;if(s.b===3)return 2;return 3};
+const LEVELS=["Neu","Lernend","Gefestigt","Beherrscht"];
+const active=()=>ITEMS.filter(i=>S.settings.groups[i.g]);
+
+function record(item,ok,ms,picked,promoteMode){
+  const now=Date.now(),s=ks(item.k),t=Math.min(ms,15000);
+  s.n++;s.l=now;
+  if(ok){s.c++;s.st++;s.ms+=t;if(promoteMode==="srs"||s.b===0||s.d<=now){s.b=Math.min(s.b+1,INT.length-1);s.d=now+INT[s.b]}}
+  else{s.st=0;s.b=Math.max(1,s.b-2);s.d=now+INT[1];if(picked&&picked!==item.k)s.cf[picked]=(s.cf[picked]||0)+1}
+  const d=S.days[dayKey()]||(S.days[dayKey()]={a:0,c:0,ms:0});
+  d.a++;if(ok)d.c++;d.ms+=t;S.totalMs+=t;
+  save();renderGoalMini();
+}
+/* Persönliche Verwechslungspaare, symmetrisch zusammengefasst */
+function confusionPairs(){const p={};Object.entries(S.kana).forEach(([k,s])=>Object.entries(s.cf||{}).forEach(([o,c])=>{if(!BYK[o])return;const key=pkey(k,o);p[key]=(p[key]||0)+c}));return Object.entries(p).map(([key,c])=>{const [a,b]=key.split("|");return {a,b,c}}).sort((x,y)=>y.c-x.c)}
+const groupConf=g=>{let n=0;g.k.forEach(a=>{const cf=(S.kana[a]||{}).cf||{};g.k.forEach(b=>{if(cf[b])n+=cf[b]})});return n};
+function groupRisk(g){
+  const its=g.k.map(k=>S.kana[k]).filter(s=>s&&s.n);
+  if(!its.length)return {cls:"na",t:"Noch nicht geübt",n:0};
+  const n=groupConf(g);
+  if(n>=4)return {cls:"hi",t:"Hohe Gefahr",n};
+  if(n>=1)return {cls:"mid",t:"Aufpassen",n};
+  return {cls:"lo",t:"Sicher",n};
+}
+
+/* ---------- Speichern & Synchronisation ---------- */
+let saveT=null,remote=null,writing=Promise.resolve();
+function save(){S.updated=Date.now();try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}clearTimeout(saveT);saveT=setTimeout(pushRemote,2500)}
+function pushRemote(){if(!remote)return;const body={json:JSON.stringify(S),updated:S.updated};writing=writing.then(()=>remote.set(body)).then(()=>setSync("In deinem Konto gespeichert")).catch(()=>setSync("Nur lokal gespeichert"))}
+function setSync(t){$("#sync").textContent=t}
+async function initRemote(){
+  try{
+    if(!window.claude||!window.claude.use)return;
+    const [db,user]=await Promise.all([window.claude.use("db"),window.claude.use("user")]);
+    if(!db||!user)return;
+    const id=await user.id();if(!id)return;
+    const ref=db.doc("data/users/"+id+"/progress");
+    const snap=await Promise.race([ref.get(),new Promise((_,rej)=>setTimeout(()=>rej("timeout"),10000))]);
+    remote=ref;
+    if(snap.exists){const d=snap.data()||{};
+      if((d.updated||0)>(S.updated||0)){try{S=merge(JSON.parse(d.json));applyTheme();localStorage.setItem(LS,JSON.stringify(S));if(!SS)render();renderGoalMini()}catch(e){}}
+      else if((S.updated||0)>(d.updated||0))pushRemote();
+    }else if(S.updated)pushRemote();
+    setSync("In deinem Konto gespeichert");
+  }catch(e){remote=null}
+}
+
+/* ---------- Audio ---------- */
+let TTS=null,jaVoice=null;
+function findVoice(){try{jaVoice=speechSynthesis.getVoices().find(v=>/^ja/i.test(v.lang))||null}catch(e){}}
+if("speechSynthesis" in window){findVoice();try{speechSynthesis.onvoiceschanged=()=>{findVoice();if(!SS&&cur==="ueben")renderHome()}}catch(e){}}
+const canSpeak=()=>!!(TTS||jaVoice);
+async function say(text){
+  if(TTS){try{await TTS.speak(text,{language:"ja"});return}catch(e){if(e&&e.code==="not_granted")TTS=null}}
+  if(jaVoice){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang="ja-JP";u.voice=jaVoice;u.rate=.85;speechSynthesis.speak(u)}catch(e){}}
+}
+const SPK='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg>';
+
+/* ---------- Hilfen ---------- */
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+function toast(t){const el=$("#toast");el.textContent=t;el.classList.add("on");clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove("on"),2200)}
+const fmtDur=ms=>{const m=Math.round(ms/60000);if(m<60)return m+" min";if(m<2880)return Math.floor(m/60)+" h "+(m%60)+" min";return Math.round(m/1440)+" Tagen"};
+const fmtS=ms=>(ms/1000).toFixed(1).replace(".",",")+" s";
+const pct=(a,b)=>b?Math.round(a/b*100):0;
+function streak(){let n=0,t=Date.now();if(!S.days[dayKey(t)])t-=DAY;while(S.days[dayKey(t)]&&S.days[dayKey(t)].a>0){n++;t-=DAY}return n}
+function dueItems(){const now=Date.now();return active().filter(i=>{const s=S.kana[i.k];return s&&s.n&&s.d<=now}).sort((a,b)=>S.kana[a.k].d-S.kana[b.k].d)}
+const newItems=()=>active().filter(i=>!S.kana[i.k]||!S.kana[i.k].n);
+function weight(i){const s=S.kana[i.k];if(!s||!s.n)return 1.6;let w=1+(1-s.c/s.n)*5;if(s.b<3)w+=1.5;if(s.d<=Date.now())w+=1.5;if(s.st>=5)w*=.6;return w}
+function pickItem(pool,recent){const c=pool.filter(i=>!recent.includes(i.k));const list=c.length?c:pool;let tot=0;const ws=list.map(i=>tot+=weight(i));const x=Math.random()*tot;return list[Math.max(0,ws.findIndex(v=>v>=x))]}
+function distractors(item,n,restrict){
+  let pool=restrict||active();if(!restrict&&pool.length<n+1)pool=ITEMS;
+  const cf=(S.kana[item.k]||{}).cf||{};
+  const cand=pool.filter(o=>o.k!==item.k&&o.lbl!==item.lbl&&(restrict||o.r!==item.r));
+  const sc=cand.map(o=>{let w=Math.random()*2.5;
+    if(SIM[item.k]&&SIM[item.k].has(o.k))w+=4;
+    if(cf[o.k])w+=3+cf[o.k];
+    const rc=(S.kana[o.k]||{}).cf||{};if(rc[item.k])w+=2;
+    if(base(o.k)===base(item.k))w+=3;
+    if(o.row===item.row)w+=1.2;if(o.v&&o.v===item.v)w+=1;
+    if(o.k.length===item.k.length)w+=1.5;
+    return [w,o]}).sort((a,b)=>b[0]-a[0]);
+  return shuffle(sc.slice(0,restrict?n:7).map(x=>x[1])).slice(0,n);
+}
+const kanaCls=k=>k.length>1?"yo":"";
+
+/* ---------- Navigation ---------- */
+let cur="ueben";
+const VIEWS=["ueben","aehnlich","tabelle","lesen","statistik"];
+function go(v,push=true){
+  if(SS&&!SS.done)endSession();
+  SS=null;cur=v;
+  $$(".view").forEach(el=>el.classList.toggle("on",el.id==="v-"+v));
+  $$("nav button").forEach(b=>b.dataset.nav===v?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));
+  if(push&&location.hash!=="#"+v)history.replaceState(null,"","#"+v);
+  render();window.scrollTo(0,0);
+}
+function render(){({ueben:renderHome,aehnlich:renderSim,tabelle:renderTable,lesen:renderLesen,statistik:renderStats})[cur]();renderGoalMini()}
+$$("nav button").forEach(b=>b.onclick=()=>go(b.dataset.nav));
+window.addEventListener("hashchange",()=>{const h=location.hash.slice(1);if(VIEWS.includes(h)&&h!==cur)go(h,false)});
+function renderGoalMini(){const t=S.days[dayKey()]||{a:0},g=S.settings.goal;$("#goalMini").innerHTML=`<div class="sec-title"><b class="small">Tagesziel</b><span class="small muted num">${t.a} / ${g}</span></div>${(()=>{const laps=Math.floor(t.a/g),rem=t.a/g-laps;return `<div class="mini" style="background:${laps?lapColor(laps-1):"var(--line)"}"><i style="width:${rem*100}%;background:${lapColor(laps)}"></i></div>`})()}<span class="small muted">${streak()} Tage in Folge</span>`}
+
+/* ---------- Übersicht ---------- */
+const MODES=[
+  {id:"k2r",ico:"あ→a",t:"Kana → Romaji",d:"Zeichen sehen, Lesung nennen"},
+  {id:"r2k",ico:"a→あ",t:"Romaji → Kana",d:"Lesung sehen, passendes Zeichen finden"},
+  {id:"drill",ico:"ぬ≈め",t:"Unterscheiden",d:"Nur ähnliche Zeichen gegeneinander, deine Verwechslungen zuerst",feat:true},
+  {id:"koch",ico:"2+1",t:"Koch-Methode",d:"Start mit 2 Zeichen, ein neues erst bei 90 % schnellen Treffern. Läuft, bis du aufhörst",feat:true},
+  {id:"listen",ico:"♪",t:"Hören",d:"Laut hören und erkennen"},
+  {id:"sprint",ico:"60",t:"Sprint",d:"60 Sekunden, so viele wie möglich"},
+  {id:"weak",ico:"！",t:"Schwächen",d:"Nur deine unsichersten Zeichen"}
+];
+function pairRows(list){return list.map(p=>`<button class="pairrow" data-pa="${p.a}" data-pb="${p.b}"><span class="pk">${p.a}<em>vs</em>${p.b}</span><span class="t">${esc(pairText(p.a,p.b))}</span>${p.c?`<span class="pill hi num">${p.c}×</span>`:`<span class="pill na">typisch</span>`}</button>`).join("")}
+const TYPICAL=[["ぬ","め"],["る","ろ"],["さ","ち"],["は","ほ"],["ね","れ"],["い","り"],["わ","れ"]].filter(p=>BYK[p[0]]&&BYK[p[1]]&&p[0]!==p[1]).map(([a,b])=>({a,b,c:0}));
+/* Tagesziel-Ring: jede weitere Runde über dem Ziel bekommt die nächste Farbe der Palette */
+const LAPS=["var(--accent)","var(--good)","var(--m1)","var(--m2)"];
+const lapColor=k=>LAPS[k%LAPS.length];
+function ringSVG(a,goal,C){
+  const laps=Math.floor(a/goal),rem=a/goal-laps;
+  const circ=(stroke,off)=>`<circle cx="52" cy="52" r="44" fill="none" stroke="${stroke}" stroke-width="10" ${off===undefined?"":`stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-off)}"`}/>`;
+  if(laps===0)return circ("var(--line)")+(a>0?circ(lapColor(0),rem):"");
+  return circ(lapColor(laps-1))+(rem>0?circ(lapColor(laps),rem):"");
+}
+function renderHome(){
+  const act=active(),due=dueItems(),nw=newItems(),today=S.days[dayKey()]||{a:0,c:0};
+  const goal=S.settings.goal,p=Math.min(1,today.a/goal),C=2*Math.PI*44;
+  const lv=[0,0,0,0];act.forEach(i=>lv[level(i.k)]++);
+  const newN=Math.min(S.settings.newPer,nw.length);
+  let hint;
+  if(due.length||newN)hint=`${due.length} fällig zur Wiederholung · ${newN} neue Zeichen`;
+  else{const nx=act.map(i=>S.kana[i.k]).filter(s=>s&&s.n).map(s=>s.d).sort((a,b)=>a-b)[0];hint=nx?`Alles wiederholt. Nächste Fälligkeit in ${fmtDur(Math.max(nx-Date.now(),60000))}.`:"Wähle Zeichengruppen aus."}
+  const seen=act.filter(i=>S.kana[i.k]&&S.kana[i.k].n).length;
+  const cp=confusionPairs().filter(x=>BYK[x.a]&&BYK[x.b]).slice(0,5);
+  const pairs=cp.length?cp:TYPICAL.slice(0,5);
+  const drillOK=drillGroups().length>0;
+  $("#v-ueben").innerHTML=`<div class="home">
+   <div class="stack">
+    <div class="card hero">
+      <div><h2>Lernsitzung</h2><p>${hint}</p></div>
+      <button class="btn light" id="startSrs">${due.length||newN?"Starten":"Freies Üben"} <kbd class="kbd-inv">↵</kbd></button>
+    </div>
+    <div class="sec-title"><h3>Zeichengruppen</h3><span class="muted small">${act.length} Zeichen aktiv</span></div>
+    <div class="groups">${Object.entries(GROUPS).map(([g,o])=>`<button class="chip" data-g="${g}" aria-pressed="${!!S.settings.groups[g]}"><span class="kana">${o.ex}</span>${o.name}<small>${ITEMS.filter(i=>i.g===g).length}</small></button>`).join("")}</div>
+    <div class="sec-title"><h3>Übungsmodi</h3><span class="muted small">je 20 Fragen, adaptiv gewichtet</span></div>
+    <div class="fmtbar"><span class="small" style="font-weight:700">Antwortformat</span><div class="seg fmtseg" role="group" aria-label="Antwortformat">${Object.entries(FORMATS).map(([k,f])=>`<button data-fmt="${k}" aria-pressed="${S.settings.format===k}"><b>${f.n}</b><small>${f.d}</small></button>`).join("")}</div></div>
+    <div class="modes">${MODES.map(m=>{
+      let dis=act.length<4,d=m.d;
+      if(m.id==="listen"&&!canSpeak()){dis=true;d="In diesem Browser ist keine japanische Stimme verfügbar"}
+      if(m.id==="koch")d+=` · Stufe ${kochLvl()} / ${kochOrder().length}`;
+      if(m.id==="sprint"&&S.best.sprint)d+=` · Rekord ${S.best.sprint}`;
+      if(m.id==="weak"&&seen<4){dis=true;d="Verfügbar, sobald du ein paar Zeichen geübt hast"}
+      if(m.id==="drill"&&!drillOK){dis=true;d="Aktiviere Grundzeichen, um ähnliche Zeichen zu üben"}
+      const ef=effFmt(modeDir(m.id));const note=ef!==S.settings.format?`<span class="pill na" title="Ohne japanische Tastatur nicht eintippbar">${FORMATS[ef].n}</span>`:`<span class="pill ac">${FORMATS[ef].n}</span>`;
+      return `<button class="mode ${m.feat?"feat":""}" data-mode="${m.id}" ${dis?"disabled":""}><span class="ico">${m.ico}</span><b>${m.t}</b><span>${d}</span>${dis?"":`<span class="mfmt">${note}</span>`}</button>`}).join("")}</div>
+    <div class="muted small">Das Format gilt auch für die Lernsitzung. Romaji → Kana nutzt beim Eintippen die Mehrfachauswahl, weil dafür eine japanische Tastatur nötig wäre.</div>
+   </div>
+   <div class="stack">
+    <div class="card today">
+      <div class="ring" aria-label="Tagesziel ${today.a} von ${goal}"><svg viewBox="0 0 104 104">${ringSVG(today.a,goal,C)}</svg><div class="lbl"><div><b class="num">${today.a}</b><small>von ${goal}</small></div></div></div>
+      <div class="kpis">
+        <div class="kpi"><b class="num">${streak()}</b><span>Tage in Folge</span></div>
+        <div class="kpi"><b class="num">${due.length}</b><span>Fällig</span></div>
+        <div class="kpi"><b class="num">${seen} <span class="muted small">/ ${act.length}</span></b><span>Gesehen</span></div>
+        <div class="kpi"><b class="num">${lv[3]}</b><span>Beherrscht</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="sec-title" style="margin-bottom:6px"><h3>Verwechslungsgefahr</h3><button class="btn ghost sm" data-goto="aehnlich">Alle ansehen</button></div>
+      <p class="muted small" style="margin:0 0 6px">${cp.length?"Deine häufigsten Verwechslungen. Tippe für den Vergleich.":"Typische Fallen für Anfänger. Sobald du übst, siehst du hier deine eigenen."}</p>
+      ${pairRows(pairs)}
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:12px">Fortschritt</h3>
+      <div class="grp-bars">${Object.entries(GROUPS).map(([g,o])=>{const its=ITEMS.filter(i=>i.g===g),l=[0,0,0,0];its.forEach(i=>l[level(i.k)]++);return `<div class="row"><span>${o.name}</span><div class="stack-bar">${[1,2,3].map(n=>`<i style="width:${l[n]/its.length*100}%;background:var(--m${n})"></i>`).join("")}</div><span class="num muted" style="text-align:right">${pct(l[3],its.length)} %</span></div>`}).join("")}</div>
+      <div class="legend" style="margin-top:12px">${LEVELS.slice(1).map((l,n)=>`<span><i style="background:var(--m${n+1})"></i>${l}</span>`).join("")}</div>
+    </div>
+   </div>
+  </div>`;
+  $("#startSrs").onclick=()=>startSession(due.length||newN?"srs":"k2r");
+  $$(".chip[data-g]").forEach(b=>b.onclick=()=>{const g=b.dataset.g;const on=!S.settings.groups[g];if(!on&&Object.values(S.settings.groups).filter(Boolean).length===1){toast("Mindestens eine Gruppe muss aktiv sein");return}S.settings.groups[g]=on;save();renderHome()});
+  $$(".mode").forEach(b=>b.onclick=()=>startSession(b.dataset.mode));
+  $$("[data-fmt]").forEach(b=>b.onclick=()=>{S.settings.format=b.dataset.fmt;save();renderHome()});
+  bindPairs($("#v-ueben"));
+  $$("[data-goto]").forEach(b=>b.onclick=()=>go(b.dataset.goto));
+}
+function bindPairs(root){$$("[data-pa]",root).forEach(b=>b.onclick=()=>showPair(b.dataset.pa,b.dataset.pb))}
+
+/* ---------- Vergleichsdialog ---------- */
+function showPair(a,b){
+  const A=BYK[a],B=BYK[b],sa=S.kana[a]||{},sb=S.kana[b]||{};
+  const n=((sa.cf||{})[b]||0)+((sb.cf||{})[a]||0);
+  const st=s=>s&&s.n?`${pct(s.c,s.n)} % richtig`:"noch nicht geübt";
+  openModal(`<div class="dlg-head"><h3>Vergleich</h3><button class="icon-btn" data-close aria-label="Schließen">✕</button></div>
+    <div class="cmp"><div><span class="kana" style="font-size:96px">${a}</span><b>${esc(A.lbl)}</b><small>${st(S.kana[a])}</small></div><div><span class="kana" style="font-size:96px">${b}</span><b>${esc(B.lbl)}</b><small>${st(S.kana[b])}</small></div></div>
+    <p style="margin:0">${esc(pairText(a,b))}</p>
+    <div class="sec-title"><span class="muted small">${n?`Du hast diese beiden ${n}× verwechselt.`:"Noch keine Verwechslung erfasst."}</span>
+    <div class="row-btns">${canSpeak()?`<button class="btn ghost sm" id="sa">${SPK} ${a}</button><button class="btn ghost sm" id="sb">${SPK} ${b}</button>`:""}<button class="btn primary sm" id="pd">Dieses Paar üben</button></div></div>`);
+  if($("#sa")){$("#sa").onclick=()=>say(a);$("#sb").onclick=()=>say(b)}
+  $("#pd").onclick=()=>{closeModal();startSession("drill",{set:[a,b],title:`${a} vs ${b}`})};
+}
+
+/* ---------- Sitzung ---------- */
+let SS=null;
+function drillGroups(){const act=new Set(active().map(i=>i.k));return CONF.map(g=>({g,its:g.k.filter(k=>act.has(k)).map(k=>BYK[k])})).filter(x=>x.its.length>=2)}
+function startSession(mode,opts={}){
+  const s={mode,pool:opts.pool||active(),idx:0,total:20,right:0,wrong:0,run:0,mist:{},times:[],recent:[],hist:[],start:Date.now(),done:false,locked:false,title:opts.title||""};
+  if(mode==="srs"){
+    const due=dueItems().slice(0,25),nw=newItems().slice(0,S.settings.newPer);
+    const q=due.map(i=>({item:i}));
+    nw.forEach((i,n)=>{const pos=Math.min(q.length,n*3);q.splice(pos,0,{item:i,intro:true},{item:i,fresh:true})});
+    if(!q.length){toast("Gerade nichts fällig");return}
+    s.queue=q;
+  }
+  if(mode==="weak"){s.pool=active().filter(i=>S.kana[i.k]&&S.kana[i.k].n).sort((a,b)=>{const A=S.kana[a.k],B=S.kana[b.k];return (A.c/A.n-B.c/B.n)||(A.b-B.b)}).slice(0,12)}
+  if(mode==="retry")s.total=Math.max(8,s.pool.length*2);
+  if(mode==="sprint"){s.total=Infinity;s.end=Date.now()+60000}
+  if(mode==="koch"){const ord=kochOrder();s.pool=ord.slice(0,kochLvl());s.total=Infinity;s.ups=[];s.intros=s.pool.filter(i=>!S.kana[i.k]||!S.kana[i.k].n)}
+  if(mode==="drill"){
+    if(opts.set){const items=opts.set.map(k=>BYK[k]);s.dgroups=[{g:{k:opts.set},its:items}];s.pool=items;s.total=Math.max(12,items.length*4)}
+    else{s.dgroups=drillGroups();if(!s.dgroups.length){toast("Keine ähnlichen Zeichen in den aktiven Gruppen");return}s.pool=[...new Set(s.dgroups.flatMap(x=>x.its))]}
+  }
+  SS=s;
+  $$(".view").forEach(el=>el.classList.toggle("on",el.id==="v-session"));
+  window.scrollTo(0,0);
+  if(mode==="sprint"){s.tick=setInterval(()=>{if(SS!==s)return clearInterval(s.tick);const left=s.end-Date.now();const el=$("#timer");if(el)el.textContent=Math.max(0,Math.ceil(left/1000))+" s";const b=$("#sbar");if(b)b.style.width=Math.max(0,left/600)+"%";if(left<=0){clearInterval(s.tick);finish()}},200)}
+  next();
+}
+const FORMATS={card:{n:"Karteikarte",d:"Aufdecken und selbst bewerten"},type:{n:"Eintippen",d:"Lesung frei eintippen"},mc:{n:"Mehrfachauswahl",d:"Aus 4 Antworten wählen"}};
+const modeDir=m=>({k2r:"k2r",r2k:"r2k",listen:"listen"})[m]||"k2r";
+/* Effektives Format: Romaji → Kana lässt sich ohne japanische Tastatur nicht eintippen */
+const effFmt=dir=>{const f=S.settings.format;return dir==="r2k"&&f==="type"?"mc":f};
+function pickDrill(s){
+  // Gruppe gewichtet nach eigenen Verwechslungen wählen, dann Zeichen darin
+  let tot=0;const ws=s.dgroups.map(x=>tot+=1+groupConf({k:x.its.map(i=>i.k)})*1.5+x.its.reduce((a,i)=>a+(weight(i)-1)*.3,0));
+  const x=Math.random()*tot;const grp=s.dgroups[Math.max(0,ws.findIndex(v=>v>=x))];
+  const item=pickItem(grp.its,s.recent);
+  let opts=grp.its.filter(i=>i.k!==item.k&&i.lbl!==item.lbl);
+  if(opts.length>3)opts=distractors(item,3,opts);
+  if(opts.length<3){const extra=[...(SIM[item.k]||[])].map(k=>BYK[k]).filter(o=>o&&o.k!==item.k&&!opts.includes(o)&&o.lbl!==item.lbl);opts=opts.concat(shuffle(extra).slice(0,3-opts.length))}
+  const sameSound=grp.its.some(o=>o!==item&&o.r===item.r);
+  return {item,dir:!sameSound&&Math.random()<.35?"r2k":"k2r",opts:shuffle([item,...opts])};
+}
+function next(){
+  const s=SS;if(!s||s.done)return;
+  if(s.mode==="srs"){if(!s.queue.length)return finish()}
+  else if(s.idx>=s.total)return finish();
+  if(s.mode==="sprint"&&Date.now()>=s.end)return finish();
+  let entry;
+  if(s.mode==="srs")entry=s.queue.shift();
+  else if(s.mode==="drill")entry=pickDrill(s);
+  else if(s.mode==="koch")entry=s.intros.length?{item:s.intros.shift(),intro:true}:{item:pickKoch(s)};
+  else entry={item:pickItem(s.pool,s.recent)};
+  s.cur=entry;s.locked=false;s.waiting=false;s.revealed=false;
+  s.recent.push(entry.item.k);if(s.recent.length>Math.min(3,s.pool.length-1))s.recent.shift();
+  if(entry.intro)return renderIntro(entry.item);
+  if(!entry.dir)entry.dir=modeDir(s.mode);
+  entry.fmt=effFmt(entry.dir);
+  if(entry.fmt==="mc"&&!entry.opts)entry.opts=shuffle([entry.item,...(s.mode==="koch"?distractors(entry.item,Math.min(3,s.pool.length-1),s.pool):distractors(entry.item,3))]);
+  renderQ();
+  s.qStart=Date.now();
+  if(entry.dir==="listen")say(entry.item.k);
+}
+function topBar(){
+  const s=SS;
+  if(s.mode==="sprint")return `<div class="sess-top"><button class="icon-btn" id="quit" aria-label="Sitzung beenden">✕</button><div class="bar"><i id="sbar" style="width:${Math.max(0,(s.end-Date.now())/600)}%"></i></div><span class="timer num" id="timer">${Math.ceil((s.end-Date.now())/1000)} s</span></div>`;
+  if(s.mode==="koch")return `<div class="sess-top"><button class="icon-btn" id="quit" aria-label="Runde beenden" title="Runde beenden (Esc)">✕</button><div class="bar" title="Fortschritt bis zur nächsten Prüfung"><i id="pbar" style="width:${Math.min(1,S.koch.win.length/kw())*100}%"></i></div><span class="count num" id="pcount">${kochCount(s)}</span></div>`;
+  const done=s.right+s.wrong;
+  const total=s.mode==="srs"?done+s.queue.filter(e=>!e.intro).length+(s.cur&&!s.cur.intro?1:0):s.total;
+  return `<div class="sess-top"><button class="icon-btn" id="quit" aria-label="Sitzung beenden">✕</button><div class="bar"><i id="pbar" style="width:${total?done/total*100:0}%"></i></div><span class="count num" id="pcount">${done} / ${total}</span></div>`;
+}
+const MODE_NAME={koch:"Koch-Methode",srs:"Lernsitzung",k2r:"Kana → Romaji",r2k:"Romaji → Kana",listen:"Hören",sprint:"Sprint",weak:"Schwächen",retry:"Fehler üben",drill:"Unterscheiden"};
+function sideHTML(){
+  const s=SS,n=s.right+s.wrong,avg=s.times.length?s.times.reduce((a,b)=>a+b,0)/s.times.length:0;
+  const fmt=s.cur&&s.cur.fmt?s.cur.fmt:S.settings.format;
+  return `${s.mode==="koch"?kochCard():""}<div class="card"><div class="sec-title" style="margin-bottom:12px"><h3>${s.mode==="koch"?"Diese Runde":MODE_NAME[s.mode]}${s.title?` · <span class="kana">${s.title}</span>`:""}</h3><span class="pill ac">${FORMATS[fmt].n}</span></div>
+    <div class="live"><div><b class="num" style="color:var(--good)">${s.right}</b><span>Richtig</span></div><div><b class="num" style="color:var(--bad)">${s.wrong}</b><span>Falsch</span></div><div><b class="num">${n?pct(s.right,n)+" %":"–"}</b><span>Trefferquote</span></div><div><b class="num">${avg?fmtS(avg):"–"}</b><span>Ø Zeit</span></div><div><b class="num">${s.run}</b><span>Serie</span></div><div><b class="num" style="color:var(--warn)">${s.typos||0}</b><span>Tippfehler (nicht gewertet)</span></div>${s.mode==="sprint"?`<div><b class="num">${S.best.sprint}</b><span>Rekord</span></div>`:""}</div></div>
+    <div class="card" id="simbox">${simBoxHTML()}</div>
+    <div class="card"><h3 style="margin-bottom:10px">Verlauf</h3>${s.hist.length?`<div class="hist">${s.hist.slice(-24).map(h=>`<span class="${h.ok?"y":"n"}" title="${esc(BYK[h.k].lbl)}">${h.k}</span>`).join("")}</div>`:`<div class="empty-note">Deine Antworten erscheinen hier.</div>`}</div>`;
+}
+function simBoxHTML(){
+  const s=SS,e=s.cur;if(!e)return "";
+  const i=e.item;
+  if(!s.locked&&!s.revealed&&!e.intro)return `<h3 style="margin-bottom:6px">Verwechslungsgefahr</h3><div class="empty-note">Nach deiner Antwort siehst du hier ähnliche Zeichen und wie du sie unterscheidest.</div>`;
+  let h="";
+  if(e.pickedK&&BYK[e.pickedK]&&e.pickedK!==i.k){
+    const p=BYK[e.pickedK];
+    h+=`<h3 style="margin-bottom:10px">Verwechselt</h3><div class="cmp"><div class="y"><small>Richtig</small><span class="kana">${i.k}</span><b>${esc(i.lbl)}</b></div><div class="n"><small>Gewählt</small><span class="kana">${p.k}</span><b>${esc(p.lbl)}</b></div></div><p class="small" style="margin:10px 0 0">${esc(pairText(i.k,p.k))}</p>`;
+  }
+  const sims=[...(SIM[i.k]||[])].filter(k=>BYK[k]&&k!==e.pickedK).sort((a,b)=>(pairTip(i.k,b)?1:0)-(pairTip(i.k,a)?1:0)).slice(0,4);
+  if(sims.length)h+=`<h3 style="margin:${h?"16px":"0"} 0 10px">${h?"Weitere ähnliche Zeichen":"Verwechslungsgefahr"}</h3><div class="tiplist">${sims.map(k=>`<div class="tip"><span class="pk">${i.k}<em>/</em>${k}</span><span>${esc(pairTip(i.k,k)||`${k} = ${BYK[k].lbl}`)}</span></div>`).join("")}</div>`;
+  if(!h)h=`<h3 style="margin-bottom:6px">Verwechslungsgefahr</h3><div class="empty-note">Für <span class="kana">${i.k}</span> gibt es kein typisches Verwechslungspaar.</div>`;
+  return h;
+}
+function shell(inner){
+  $("#v-session").innerHTML=`<div class="sessgrid"><div class="sess-main">${topBar()}${inner}</div><div class="sess-side" id="side">${sideHTML()}</div></div>`;
+  $("#quit").onclick=()=>finish();
+}
+function renderIntro(item){
+  const s=SS;
+  shell(`<div class="qcard"><span class="tag">Neues Zeichen</span>
+      ${canSpeak()?`<button class="icon-btn spk" id="spk" aria-label="Aussprache anhören">${SPK}</button>`:""}
+      <div class="prompt kana ${kanaCls(item.k)}">${item.k}</div>
+      <div class="reveal">${esc(item.lbl)}</div>
+      <div class="muted small">${GROUPS[item.g].name} · ${rowName(item.row)}</div>
+    </div>
+    <div class="sess-foot"><span class="hint">Präg dir Form und Lesung ein und lies rechts, womit man es leicht verwechselt. Gleich wirst du abgefragt.</span><button class="btn primary" id="go">Verstanden <kbd class="kbd-inv">↵</kbd></button></div>`);
+  s.waiting=true;
+  $("#go").onclick=()=>{s.waiting=false;next()};
+  const sp=$("#spk");if(sp)sp.onclick=()=>say(item.k);
+  $("#go").focus();
+  if(S.settings.autoSpeak)say(item.k);
+}
+const ansHTML=(i,dir)=>dir==="k2r"?esc(i.lbl):`<span class="kana">${i.k}</span> = ${esc(i.lbl)}`;
+function renderQ(){
+  const s=SS,e=s.cur,i=e.item,d=e.dir,f=e.fmt;
+  let prompt,ans,tag,hint;
+  if(d==="r2k"){tag="Welches Zeichen?";prompt=`<div class="prompt romaji">${esc(i.lbl)}</div>`}
+  else if(d==="listen"){tag="Was hörst du?";prompt=`<button class="btn ghost" id="replay" style="font-size:16px;padding:18px 26px">${SPK} Nochmal anhören</button>`}
+  else{tag="Wie liest man das?";prompt=`<div class="prompt kana ${kanaCls(i.k)}">${i.k}</div>`}
+  if(f==="type"){
+    ans=`<form class="typerow" id="tf" autocomplete="off"><input id="ans" aria-label="Lesung in Romaji" placeholder="Romaji …" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done"></form>`;
+    hint="Wird automatisch geprüft: Sobald deine Eingabe nicht mehr passen kann, zählt sie als Fehler.";
+  }else if(f==="mc"){
+    ans=`<div class="opts n${e.opts.length}">${e.opts.map((o,n)=>`<button class="opt" data-k="${o.k}"><span class="k">${n+1}</span><span class="v ${d==="k2r"?"":"kana"}">${d==="k2r"?esc(o.lbl):o.k}</span></button>`).join("")}</div>`;
+    hint=(matchMedia("(hover:none)").matches?"Tippe auf die richtige Antwort.":`Tasten <kbd>1</kbd>–<kbd>${e.opts.length}</kbd> wählen eine Antwort.`);
+  }else{
+    ans=`<div class="cardbtns" id="cb"><button class="btn primary flip" id="flip">Aufdecken <kbd class="kbd-inv">Leertaste</kbd></button></div>`;
+    hint="Überlege dir die Antwort, dann aufdecken und ehrlich bewerten.";
+  }
+  if(d==="listen")hint+=" Leertaste spielt den Laut erneut ab"+(f==="card"?", ↵ deckt auf.":".");
+  shell(`<div class="qcard" id="qc"><span class="tag">${tag}</span>${prompt}<div class="reveal" id="rev"></div></div>${ans}
+    <div class="sess-foot" id="foot"><span class="hint">${hint}</span>${s.mode!=="sprint"&&f!=="card"?`<button class="btn ghost" id="skip">Weiß nicht</button>`:""}</div>`);
+  const rp=$("#replay");if(rp)rp.onclick=()=>say(i.k);
+  const sk=$("#skip");if(sk)sk.onclick=()=>answer(false,null);
+  if(f==="type"){
+    const inp=$("#ans"),acc=accepts(i);inp.focus();
+    const tg=acc.map(normR);
+    let lastOk="";
+    inp.oninput=()=>{const raw=inp.value.trim().toLowerCase();if(!raw){lastOk="";return}
+      if(tg.includes(normR(raw)))return answer(true,null,raw);
+      if(isPrefix(raw,tg)){lastOk=inp.value;return}
+      const why=typoReason(raw,i.r);
+      if(why){inp.value=lastOk;s.typos=(s.typos||0)+1;S.typos=(S.typos||0)+1;save();typoFx(inp,$("#foot .hint"),why);const sd=$("#side");if(sd)sd.innerHTML=sideHTML();return}
+      answer(false,guessPicked(i,raw),raw)};
+    $("#tf").onsubmit=ev=>ev.preventDefault();
+  }else if(f==="mc")$$(".opt").forEach(b=>b.onclick=()=>answer(b.dataset.k===i.k,b.dataset.k));
+  else $("#flip").onclick=flip;
+}
+function showSolution(){
+  const e=SS.cur,i=e.item;
+  if(e.dir==="listen"){const r=$("#replay");if(r)r.outerHTML=`<div class="prompt kana ${kanaCls(i.k)}">${i.k}</div>`}
+  if(canSpeak()&&SS.mode!=="sprint"&&!$("#spk")){$("#qc").insertAdjacentHTML("beforeend",`<button class="icon-btn spk" id="spk" aria-label="Aussprache anhören">${SPK}</button>`);$("#spk").onclick=()=>say(i.k)}
+}
+function flip(){
+  const s=SS;if(!s||s.revealed||s.locked)return;
+  s.revealed=true;s.flipMs=Date.now()-s.qStart;
+  const e=s.cur,i=e.item;
+  $("#rev").innerHTML=e.dir==="r2k"?`<span class="kana" style="font-size:72px;font-weight:500;line-height:1.1">${i.k}</span>`:ansHTML(i,e.dir);
+  showSolution();
+  $("#cb").innerHTML=`<button class="btn rate no" id="rNo"><kbd>1</kbd> Nicht gewusst</button><button class="btn rate yes" id="rYes"><kbd>2</kbd> Gewusst</button>`;
+  $("#rNo").onclick=()=>answer(false,null);$("#rYes").onclick=()=>answer(true,null);
+  $("#foot").innerHTML=`<span class="hint">War deine Antwort richtig? <kbd>1</kbd> oder <kbd>←</kbd> nicht gewusst, <kbd>2</kbd> oder <kbd>→</kbd> gewusst.</span>`;
+  $("#simbox").innerHTML=simBoxHTML();
+  if(S.settings.autoSpeak&&s.mode!=="sprint"&&e.dir!=="listen")say(i.k);
+}
+function answer(ok,picked,typed){
+  const s=SS;if(!s||s.locked||s.done)return;s.locked=true;
+  const e=s.cur,i=e.item,ms=e.fmt==="card"&&s.revealed?s.flipMs:Date.now()-s.qStart;
+  e.pickedK=picked;
+  record(i,ok,ms,picked,s.mode==="srs"&&!e.repeat?"srs":"quiz");
+  s.idx++;s.hist.push({k:i.k,ok});
+  if(s.mode==="koch")kochUpdate(s,ok,ms);
+  if(ok){s.right++;s.run++;s.times.push(ms)}else{s.wrong++;s.run=0;s.mist[i.k]=(s.mist[i.k]||0)+1}
+  if(s.mode==="srs"){if(!ok)s.queue.splice(Math.min(3,s.queue.length),0,{item:i,repeat:true});else if(e.fresh)s.queue.splice(Math.min(4,s.queue.length),0,{item:i,repeat:true})}
+  $("#qc").classList.add(ok?"ok":"no");
+  if(e.fmt!=="card")$("#rev").innerHTML=`<span style="color:var(--${ok?"good":"bad"})">${ansHTML(i,e.dir)}${ok?" ✓":""}</span>`;
+  if(e.fmt==="mc")$$(".opt").forEach(b=>{b.disabled=true;if(b.dataset.k===i.k)b.classList.add("ok");else if(b.dataset.k===picked)b.classList.add("no")});
+  if(e.fmt==="type"){const inp=$("#ans");inp.disabled=true;if(!ok&&typed)inp.value=typed+"  →  "+i.lbl}
+  if(e.fmt==="card")$$("#cb button").forEach(b=>b.disabled=true);
+  showSolution();
+  $("#side").innerHTML=sideHTML();
+  if(s.mode==="koch"){$("#pbar").style.width=Math.min(1,S.koch.win.length/kw())*100+"%";$("#pcount").textContent=kochCount(s)}
+  else if(s.mode!=="sprint"){const done=s.right+s.wrong,total=s.mode==="srs"?done+s.queue.filter(x=>!x.intro).length:s.total;$("#pbar").style.width=done/total*100+"%";$("#pcount").textContent=done+" / "+total}
+  if(S.settings.autoSpeak&&s.mode!=="sprint"&&e.dir!=="listen"&&e.fmt!=="card")say(i.k);
+  if(e.fmt==="card"){setTimeout(next,s.mode==="sprint"?60:220);return}
+  if(s.mode==="sprint"){setTimeout(next,ok?180:1100);return}
+  if(ok){setTimeout(next,s.mode==="drill"?900:(e.fmt==="type"?420:520));return}
+  s.waiting=true;
+  $("#foot").innerHTML=`<span class="hint">${picked&&BYK[picked]&&picked!==i.k?`Du hast <span class="kana">${picked}</span> (${esc(BYK[picked].lbl)}) gewählt. Den Unterschied siehst du rechts.`:"Merk dir die richtige Lösung."}</span><button class="btn primary" id="nx">Weiter <kbd class="kbd-inv">↵</kbd></button>`;
+  $("#nx").onclick=()=>{s.waiting=false;next()};setTimeout(()=>{const b=$("#nx");if(b)b.focus()},600);
+}
+function endSession(){if(SS){clearInterval(SS.tick);if(!SS.done&&SS.right+SS.wrong>0){S.sessions++;save()}SS.done=true}}
+function finish(){
+  const s=SS;if(!s||s.done)return;endSession();
+  const n=s.right+s.wrong,dur=Date.now()-s.start;
+  let rec="";
+  if(s.mode==="sprint"&&s.right>S.best.sprint){S.best.sprint=s.right;save();rec=`<span class="intro-tag">Neuer Rekord</span>`}
+  if(s.mode==="koch"&&s.ups.length)rec=`<span class="intro-tag">Neu freigeschaltet: <span class="kana">${s.ups.join(" ")}</span> · Stufe ${kochLvl()}</span>`;
+  const avg=s.times.length?s.times.reduce((a,b)=>a+b,0)/s.times.length:0;
+  const mk=Object.entries(s.mist).sort((a,b)=>b[1]-a[1]);
+  $("#v-session").innerHTML=`<div class="res">
+    <div class="res-head">${rec}<span class="muted">${s.mode==="sprint"?"Richtige Antworten in 60 Sekunden":"Trefferquote"}</span><div class="res-big num">${s.mode==="sprint"?s.right:pct(s.right,n)+" %"}</div><span class="muted">${n?`${s.right} von ${n} richtig`:"Keine Antworten"}</span></div>
+    <div class="tiles"><div class="tile"><b class="num">${n}</b><span>Antworten</span></div><div class="tile"><b class="num">${avg?fmtS(avg):"–"}</b><span>Ø Zeit pro richtiger Antwort</span></div><div class="tile"><b class="num">${Math.floor(dur/60000)}:${String(Math.floor(dur/1000)%60).padStart(2,"0")}</b><span>Dauer</span></div></div>
+    ${mk.length?`<div class="card stack" style="gap:12px"><h3>Fehler in dieser Runde</h3><div class="mistakes">${mk.map(([k,c])=>`<span class="mk"><span class="kana">${k}</span>${esc(BYK[k].lbl)}${c>1?` <small>×${c}</small>`:""}</span>`).join("")}</div></div>`:n?`<div class="card" style="text-align:center">Fehlerfrei. Stark!</div>`:""}
+    <div class="row-btns">
+      ${mk.length?`<button class="btn primary" id="retry">Fehler gezielt üben</button>`:""}
+      ${mk.length?`<button class="btn ghost" id="drillMk">Mit ähnlichen Zeichen üben</button>`:""}
+      ${s.mode!=="srs"&&s.mode!=="retry"?`<button class="btn ${mk.length?"ghost":"primary"}" id="again">Nochmal</button>`:""}
+      <button class="btn ghost" id="home">Zur Übersicht</button>
+    </div></div>`;
+  const r=$("#retry");if(r)r.onclick=()=>startSession("retry",{pool:mk.map(([k])=>BYK[k])});
+  const dm=$("#drillMk");if(dm)dm.onclick=()=>{const set=new Set();mk.forEach(([k])=>{set.add(k);[...(SIM[k]||[])].slice(0,3).forEach(x=>BYK[x]&&set.add(x))});startSession("drill",{set:[...set].slice(0,10),title:""})};
+  const a=$("#again");if(a)a.onclick=()=>startSession(s.mode,s.mode==="drill"&&s.dgroups.length===1?{set:s.dgroups[0].g.k,title:s.title}:{});
+  $("#home").onclick=()=>go("ueben");
+  ($("#retry")||$("#again")||$("#home")).focus();
+}
+
+/* ---------- Ähnlichkeiten ---------- */
+let simFilter="alle";
+function renderSim(){
+  const cp=confusionPairs().filter(x=>BYK[x.a]&&BYK[x.b]);
+  const groups=CONF.map(g=>({g,r:groupRisk(g)}));
+  const order={hi:0,mid:1,lo:2,na:3};
+  let list=groups.slice().sort((a,b)=>order[a.r.cls]-order[b.r.cls]||b.r.n-a.r.n);
+  if(simFilter==="gefahr")list=list.filter(x=>x.r.cls==="hi"||x.r.cls==="mid");
+  if(simFilter==="aktiv"){const act=new Set(active().map(i=>i.k));list=list.filter(x=>x.g.k.some(k=>act.has(k)))}
+  const pairsH=(cp.length?cp.slice(0,8):TYPICAL).map(p=>`<div class="paircard"><div class="duo"><div><span class="kana">${p.a}</span><b>${esc(BYK[p.a].lbl)}</b></div><span class="vs">vs</span><div><span class="kana">${p.b}</span><b>${esc(BYK[p.b].lbl)}</b></div></div><p>${esc(pairText(p.a,p.b))}</p><div class="ft">${p.c?`<span class="pill hi num">${p.c}× verwechselt</span>`:`<span class="pill na">Typische Falle</span>`}<button class="btn ghost sm" data-pd="${p.a}|${p.b}">Paar üben</button></div></div>`).join("");
+  $("#v-aehnlich").innerHTML=`<div class="stack" style="gap:26px">
+    <div class="sec-title"><div><h2>Ähnlichkeiten</h2><p class="muted" style="margin:4px 0 0">Zeichen, die leicht verwechselt werden, mit Tipps zur Unterscheidung. Die Gefahrenstufe ergibt sich aus deinen eigenen Fehlern.</p></div>
+      <button class="btn primary" id="drillAll" ${drillGroups().length?"":"disabled"}>Unterscheiden üben</button></div>
+    <div class="stack" style="gap:12px"><div class="sec-title"><h3>${cp.length?"Deine häufigsten Verwechslungen":"Typische Fallen"}</h3><span class="muted small">${cp.length?`${cp.reduce((a,p)=>a+p.c,0)} Verwechslungen insgesamt`:"Sobald du übst, erscheinen hier deine eigenen Paare"}</span></div>
+      <div class="pairs">${pairsH}</div></div>
+    <div class="stack" style="gap:12px"><div class="sec-title"><h3>Verwechslungsgruppen</h3>
+      <div class="filters">${[["alle","Alle"],["gefahr","Mit Fehlern"],["aktiv","Aktive Gruppen"]].map(([v,l])=>`<button class="chip" data-f="${v}" aria-pressed="${simFilter===v}">${l}</button>`).join("")}</div></div>
+      ${list.length?`<div class="cgroups">${list.map(({g,r})=>{
+        const tips=Object.entries(g.tips);
+        return `<div class="cg"><div class="cg-head"><div><h3>${esc(g.t)}</h3><p>${esc(g.d)}</p></div><span class="pill ${r.cls}">${r.t}</span></div>
+        <div class="cg-k">${g.k.map(k=>{const s=S.kana[k];return `<button data-k="${k}" title="${k} ${esc(BYK[k].lbl)}${s&&s.n?`: ${pct(s.c,s.n)} % richtig`:""}"><span class="kana">${k}</span><small>${esc(BYK[k].lbl)}</small><span class="mb" style="background:var(--m${level(k)})"></span></button>`}).join("")}</div>
+        ${tips.length?`<details class="tips"><summary>${tips.length} Unterscheidungstipps</summary><div class="tiplist">${tips.map(([p,t])=>{const [a,b]=p.split("|");return `<div class="tip"><span class="pk">${a}<em>/</em>${b}</span><span>${esc(t)}</span></div>`}).join("")}</div></details>`:""}
+        <div class="ft"><span class="muted small">${r.n?`${r.n}× innerhalb der Gruppe verwechselt`:`${g.k.length} Zeichen`}</span><button class="btn ghost sm" data-dg="${g.id}">Gruppe üben</button></div></div>`}).join("")}</div>`:`<div class="empty-note">Keine Gruppen mit Fehlern. Gut so.</div>`}
+    </div></div>`;
+  $("#drillAll").onclick=()=>startSession("drill");
+  $$("[data-f]").forEach(b=>b.onclick=()=>{simFilter=b.dataset.f;renderSim()});
+  $$("[data-pd]").forEach(b=>b.onclick=()=>{const [a,c]=b.dataset.pd.split("|");startSession("drill",{set:[a,c],title:`${a} vs ${c}`})});
+  $$("[data-dg]").forEach(b=>b.onclick=()=>{const g=CONF.find(x=>x.id===b.dataset.dg);startSession("drill",{set:g.k,title:g.k.slice(0,5).join(" ")})});
+  $$(".cg-k button").forEach(b=>b.onclick=()=>showDetail(b.dataset.k));
+}
+
+/* ---------- Koch-Methode ---------- */
+const KOCH_GOAL=.9,KOCH_MS=4000;
+const kw=()=>S.settings.kochWin||20;
+const VIDX={a:0,i:1,u:2,e:3,o:4,"":5};
+const ROWIDX=Object.fromEntries(ROWS.map((r,n)=>[r.id,n]));
+const KOCH_ORDERS={row:"Zeilenweise",col:"Spaltenweise",rand:"Zufällig"};
+function kochOrder(){
+  const act=active(),mode=S.settings.kochOrder||"row";
+  if(mode==="col"){const gi={basic:0,daku:1,yoon:2};return act.slice().sort((a,b)=>gi[a.g]-gi[b.g]||VIDX[a.v]-VIDX[b.v]||ROWIDX[a.row]-ROWIDX[b.row])}
+  if(mode==="rand"){
+    if(!S.koch.perm||S.koch.perm.length!==ITEMS.length)S.koch.perm=shuffle(ITEMS.map(i=>i.k));
+    const set=new Set(act.map(i=>i.k));return S.koch.perm.filter(k=>set.has(k)).map(k=>BYK[k]);
+  }
+  return act;
+}
+const kochCount=s=>`Stufe ${kochLvl()} · ${s.right+s.wrong} Antworten`;
+const kochLvl=()=>Math.max(2,Math.min(S.koch.lvl,kochOrder().length));
+function pickKoch(s){
+  const newest=s.pool[s.pool.length-1];
+  const c=s.pool.filter(i=>!s.recent.includes(i.k));const list=c.length?c:s.pool;
+  let tot=0;const ws=list.map(i=>tot+=weight(i)*(i===newest?2.5:1));const x=Math.random()*tot;
+  return list[Math.max(0,ws.findIndex(v=>v>=x))];
+}
+function kochCard(){
+  const ord=kochOrder(),lvl=kochLvl(),w=S.koch.win,acc=w.length?w.reduce((a,b)=>a+b,0)/w.length:0;
+  const msg=w.length<kw()?`Noch ${kw()-w.length} Antworten bis zur nächsten Prüfung.`:acc>=KOCH_GOAL?"Ziel erreicht.":`Ziel: 90 % der letzten ${kw()} Antworten. Bleib dran.`;
+  return `<div class="card"><div class="sec-title" style="margin-bottom:10px"><h3>Koch-Methode</h3><span class="pill ac num">Stufe ${lvl} / ${ord.length}</span></div>
+    <div class="kochpool">${ord.slice(0,lvl).map((i,n)=>`<span class="kana ${n===lvl-1?"new":""}" title="${esc(i.lbl)}">${i.k}</span>`).join("")}</div>
+    <div class="sec-title small" style="margin-top:12px"><span>Schnell und richtig (letzte ${w.length})</span><b class="num">${pct(acc*w.length,w.length)} %</b></div>
+    <div class="kbar"><i style="width:${acc*100}%;background:${acc>=KOCH_GOAL?"var(--good)":"var(--accent)"}"></i><span style="left:${KOCH_GOAL*100}%"></span></div>
+    <div class="muted" style="font-size:12px;margin-top:8px">${msg} Antworten über ${KOCH_MS/1000} s zählen nicht.</div></div>`;
+}
+function kochUpdate(s,ok,ms){
+  const K=S.koch;K.win.push(ok&&ms<KOCH_MS?1:0);while(K.win.length>kw())K.win.shift();
+  const ord=kochOrder(),lvl=kochLvl(),acc=K.win.reduce((a,b)=>a+b,0)/K.win.length;
+  if(K.win.length>=kw()&&acc>=KOCH_GOAL&&lvl<ord.length){
+    K.lvl=lvl+1;K.win=[];const it=ord[lvl];s.pool=ord.slice(0,K.lvl);s.intros.push(it);s.ups.push(it.k);
+    toast(`Stufe ${K.lvl}: ${it.k} (${it.lbl}) kommt dazu`);
+  }
+  save();
+}
+
+/* ---------- Umschrift ---------- */
+const ROMA=(()=>{const m={};ITEMS.forEach(i=>m[i.k]=i.r);Object.assign(m,{"ぁ":"a","ぃ":"i","ぅ":"u","ぇ":"e","ぉ":"o","ゃ":"ya","ゅ":"yu","ょ":"yo","ゎ":"wa","ゔ":"vu","ゐ":"i","ゑ":"e","ゕ":"ka","ゖ":"ke",
+ "ふぁ":"fa","ふぃ":"fi","ふぇ":"fe","ふぉ":"fo","ふゅ":"fyu","てぃ":"ti","でぃ":"di","とぅ":"tu","どぅ":"du","てゅ":"tyu","でゅ":"dyu","ちぇ":"che","しぇ":"she","じぇ":"je",
+ "うぃ":"wi","うぇ":"we","うぉ":"wo","ゔぁ":"va","ゔぃ":"vi","ゔぇ":"ve","ゔぉ":"vo","つぁ":"tsa","つぃ":"tsi","つぇ":"tse","つぉ":"tso","いぇ":"ye","ぢゃ":"ja","ぢゅ":"ju","ぢょ":"jo","くぁ":"kwa","ぐぁ":"gwa"});return m})();
+const PUNCT={"。":". ","、":", ","「":"\"","」":"\"","『":"\"","』":"\"","・":" ","〜":"~","…":"...","〈":"<","〉":">","【":"[","】":"]"};
+const MAC={a:"ā",i:"ī",u:"ū",e:"ē",o:"ō"};
+const toH=c=>{const x=c.codePointAt(0);return x>=0x30A1&&x<=0x30F6?String.fromCodePoint(x-0x60):c};
+const hstr=s=>[...s].map(toH).join("");
+function translit(text,opt){
+  const ch=[...text.normalize("NFKC")],T=[];let i=0;
+  while(i<ch.length){
+    const c=ch[i],h=toH(c);
+    if(h==="っ"){T.push({src:c,rom:"",kind:"kana",sok:true});i++;continue}
+    if(h==="ー"){T.push({src:c,rom:"",kind:"kana",long:true});i++;continue}
+    if(i+1<ch.length&&ROMA[h+toH(ch[i+1])]&&/[ぁぃぅぇぉゃゅょゎ]/.test(toH(ch[i+1]))){T.push({src:c+ch[i+1],rom:ROMA[h+toH(ch[i+1])],kind:"kana"});i+=2;continue}
+    if(ROMA[h]!==undefined){T.push({src:c,rom:ROMA[h],kind:"kana"});i++;continue}
+    if(c==="\n"){T.push({src:c,rom:"\n",kind:"nl"});i++;continue}
+    if(/\s/.test(c)){T.push({src:c,rom:" ",kind:"space"});i++;continue}
+    if(PUNCT[c]!==undefined||/[.,!?;:()"'~\-]/.test(c)){T.push({src:c,rom:PUNCT[c]!==undefined?PUNCT[c]:c,kind:"punct"});i++;continue}
+    if(/[㐀-鿿豈-﫿々〆]/.test(c)){T.push({src:c,rom:c,kind:"kanji"});i++;continue}
+    T.push({src:c,rom:c,kind:"other"});i++;
+  }
+  const isK=t=>t&&t.kind==="kana";
+  const edge=t=>!t||t.kind==="space"||t.kind==="nl"||t.kind==="punct";
+  T.forEach((t,j)=>{
+    if(!isK(t))return;
+    const h=hstr(t.src),nx=T[j+1],pv=T[j-1];
+    if(opt.particles&&t.src==="を")t.rom="o";
+    if(opt.particles&&(t.src==="は"||t.src==="へ")&&edge(pv)&&edge(nx)&&pv&&pv.kind!=="nl"){t.rom=t.src==="は"?"wa":"e";t.part=true}
+    if(h==="ん"&&isK(nx)&&/^[aiueoy]/.test(nx.rom))t.rom="n'";
+  });
+  T.forEach((t,j)=>{
+    if(t.sok){const nx=T[j+1];t.rom=isK(nx)&&/^[bcdfghjkmpqrstvwxz]/.test(nx.rom)?(nx.rom.startsWith("ch")?"t":nx.rom[0]):""}
+  });
+  T.forEach((t,j)=>{
+    if(!isK(t))return;
+    const pv=T[j-1];
+    if(t.long){const v=isK(pv)?pv.rom.slice(-1):"";if("aiueo".includes(v)&&v){if(opt.macron){pv.rom=pv.rom.slice(0,-1)+MAC[v];t.rom=""}else t.rom=v}else t.rom="-";return}
+    if(opt.macron&&isK(pv)&&!pv.part&&t.src.length===1&&!t.part){
+      const h=toH(t.src),v=pv.rom.slice(-1);
+      if((v==="o"&&(h==="う"||h==="お"))||(v==="u"&&h==="う")||(v==="a"&&h==="あ")||(v==="e"&&h==="え")){pv.rom=pv.rom.slice(0,-1)+MAC[v];t.rom="";t.merged=true}
+    }
+  });
+  const out=T.map(t=>t.rom).join("").split("\n").map(l=>l.replace(/ +/g," ").replace(/ ([.,!?])/g,"$1").trim()).join("\n");
+  return {T,out};
+}
+/* ---------- Lesen: Kurzgeschichten ---------- */
+const G={"は":"Themenpartikel (gelesen wa)","が":"Subjektpartikel","を":"Objektpartikel (gelesen o)","に":"Partikel: in, an, zu","へ":"Partikel: nach, zu (gelesen e)","で":"Partikel: in, mit, durch","の":"Partikel: von, -s / macht Verben zu Nomen","と":"und, mit / markiert ein Zitat","も":"auch","から":"seit, von","まで":"bis","な":"Ausruf / verbindet na-Adjektive","よね":"…, nicht wahr?",
+ "です":"ist (höflich)","でした":"war (höflich)","います":"ist da (Lebewesen) / Verlaufsform","いました":"war da / Verlaufsform (Vergangenheit)","あります":"es gibt (Dinge)","ありました":"es gab (Dinge)","いる":"da sein (Lebewesen)","ある":"ein gewisser / es gibt",
+ "わたし":"ich","わたしたち":"wir","その":"dieses, jenes","それ":"das","ひ":"Tag","そう":"angeblich, es scheint","しまいました":"(Handlung ganz abgeschlossen, oft unbeabsichtigt)","いきました":"ging, fuhr","いきます":"gehe, fahre","いきたい":"möchte gehen","いって":"gehen (te-Form)",
+ "ちいさい":"klein","おおきい":"groß","みつけました":"fand","つくりました":"machte, baute","わらいました":"lachte","にっこり":"strahlend, mit einem Lächeln","いえ":"Haus, Zuhause","ともだち":"Freund(in)","あさ":"Morgen","みず":"Wasser","のみました":"trank","のみます":"trinke","いっしょ":"zusammen","いい":"gut, schön","みち":"Weg","ほん":"Buch","しょうねん":"Junge","そと":"draußen","なか":"Inneres, darin","たくさん":"viel","とても":"sehr","すこし":"ein wenig","ちょっと":"etwas, ein bisschen","でも":"aber","だから":"deshalb","いま":"jetzt","まいにち":"jeden Tag","きょう":"heute","きのう":"gestern","なりました":"wurde","いいました":"sagte","すき":"mögen, Lieblings-","だいすき":"sehr mögen","ずっと":"die ganze Zeit","はな":"Nase","め":"Auge(n)","て":"Hand, Hände"};
+const STORIES=[
+ {id:"asa",t:"あさ",de:"Der Morgen",lv:1,s:[["あさ です。","Es ist Morgen."],["そら は あおい です。","Der Himmel ist blau."],["とり が ないて います。","Ein Vogel singt."],["わたし は おきて、 みず を のみます。","Ich stehe auf und trinke Wasser."],["いい ひ に なり そう です。","Es wird wohl ein schöner Tag."]],
+  g:{"そら":"Himmel","あおい":"blau","とり":"Vogel","ないて":"singen, rufen (te-Form)","おきて":"aufstehen (te-Form)","なり":"werden"}},
+ {id:"neko",t:"ねこ と さかな",de:"Die Katze und der Fisch",lv:1,s:[["ちいさい ねこ が いました。","Es war einmal eine kleine Katze."],["ねこ は さかな が すき です。","Die Katze mag Fisch."],["ある ひ、 ねこ は かわ へ いきました。","Eines Tages ging die Katze zum Fluss."],["かわ に おおきい さかな が いました。","Im Fluss war ein großer Fisch."],["ねこ は 「にゃあ」 と なきました。","Die Katze rief „Miau“."],["でも、 さかな は にげて しまいました。","Aber der Fisch schwamm davon."]],
+  g:{"ねこ":"Katze","さかな":"Fisch","かわ":"Fluss","にゃあ":"miau","なきました":"rief, miaute","にげて":"fliehen (te-Form)"}},
+ {id:"ame",t:"あめ の ひ",de:"Ein Regentag",lv:1,s:[["あさ から あめ が ふって います。","Seit dem Morgen regnet es."],["わたし は あかい かさ を もって、 そと に でました。","Ich nahm meinen roten Schirm und ging hinaus."],["みち に おおきい みずたまり が ありました。","Auf dem Weg war eine große Pfütze."],["こども たち が その なか で あそんで います。","Kinder spielen darin."],["わたし も すこし わらいました。","Ich musste auch ein wenig lachen."]],
+  g:{"あめ":"Regen","ふって":"fallen (Regen, te-Form)","あかい":"rot","かさ":"Schirm","もって":"halten, mitnehmen (te-Form)","でました":"ging hinaus","みずたまり":"Pfütze","こども":"Kind(er)","たち":"(Mehrzahl)","あそんで":"spielen (te-Form)"}},
+ {id:"ichiba",t:"いちば",de:"Auf dem Markt",lv:1,s:[["にちようび に いちば へ いきました。","Am Sonntag ging ich auf den Markt."],["いちば に は やさい が たくさん ありました。","Auf dem Markt gab es viel Gemüse."],["わたし は にんじん と だいこん を かいました。","Ich kaufte Karotten und Rettich."],["おみせ の ひと が りんご を ひとつ くれました。","Die Verkäuferin schenkte mir einen Apfel."],["「ありがとう ございます。」 と いいました。","Ich sagte: „Vielen Dank.“"]],
+  g:{"にちようび":"Sonntag","いちば":"Markt","やさい":"Gemüse","にんじん":"Karotte","だいこん":"Rettich","かいました":"kaufte","おみせ":"Laden","ひと":"Person","りんご":"Apfel","ひとつ":"eins, ein Stück","くれました":"gab mir","ありがとう":"danke","ございます":"(höflich verstärkend)"}},
+ {id:"pochi",t:"ぽち",de:"Pochi",lv:2,s:[["きのう、 ともだち の いえ へ あそび に いきました。","Gestern habe ich einen Freund besucht."],["ともだち の いえ に は いぬ が います。","Mein Freund hat einen Hund."],["いぬ の なまえ は ぽち です。","Der Hund heißt Pochi."],["わたしたち は ぽち と こうえん を はしりました。","Wir sind mit Pochi durch den Park gerannt."],["ゆうがた、 いえ に かえりました。","Am Abend ging ich nach Hause."]],
+  g:{"あそび":"Spielen (zum Spielen)","いぬ":"Hund","なまえ":"Name","ぽち":"Pochi (Hundename)","こうえん":"Park","はしりました":"rannte","ゆうがた":"Abend","かえりました":"kehrte zurück"}},
+ {id:"gakkou",t:"がっこう",de:"In der Schule",lv:2,s:[["わたし は がくせい です。","Ich bin Schülerin."],["まいにち でんしゃ で がっこう に いきます。","Jeden Tag fahre ich mit dem Zug zur Schule."],["いちばん すき な じゅぎょう は おんがく です。","Mein Lieblingsfach ist Musik."],["ひるやすみ に は ともだち と おべんとう を たべます。","In der Mittagspause esse ich mit Freunden mein Bentō."],["しゅくだい は ちょっと むずかしい です。","Die Hausaufgaben sind etwas schwierig."]],
+  g:{"がくせい":"Schüler(in), Student(in)","でんしゃ":"Zug","がっこう":"Schule","いちばん":"am meisten","じゅぎょう":"Unterricht, Fach","おんがく":"Musik","ひるやすみ":"Mittagspause","おべんとう":"Lunchbox (Bentō)","たべます":"esse","しゅくだい":"Hausaufgaben","むずかしい":"schwierig"}},
+ {id:"umi",t:"うみ",de:"Am Meer",lv:2,s:[["なつやすみ に かぞく で うみ へ いきました。","In den Sommerferien fuhr ich mit meiner Familie ans Meer."],["うみ は とても きれい でした。","Das Meer war wunderschön."],["おとうと は すな で おしろ を つくりました。","Mein kleiner Bruder baute eine Burg aus Sand."],["わたし は ちいさい かに を みつけました。","Ich fand eine kleine Krabbe."],["かえり の くるま で、 みんな ねて しまいました。","Auf der Heimfahrt im Auto schliefen alle ein."]],
+  g:{"なつやすみ":"Sommerferien","かぞく":"Familie","うみ":"Meer","きれい":"schön, sauber","おとうと":"kleiner Bruder","すな":"Sand","おしろ":"Burg","かに":"Krabbe","かえり":"Rückweg","くるま":"Auto","みんな":"alle","ねて":"schlafen (te-Form)"}},
+ {id:"dango",t:"だんご",de:"Omas Dango",lv:2,s:[["おばあさん は おかし を つくる の が じょうず です。","Oma kann wunderbar Süßigkeiten machen."],["きょう は いっしょ に だんご を つくりました。","Heute haben wir zusammen Dango gemacht."],["こめ の こな に みず を いれて、 まるく します。","Man gibt Wasser zum Reismehl und formt Kugeln."],["それ を ゆでて、 あまい たれ を かけます。","Man kocht sie und gießt süße Soße darüber."],["「おいしい！」 と いう と、 おばあさん は にっこり わらいました。","Als ich „Lecker!“ sagte, lächelte Oma strahlend."]],
+  g:{"おばあさん":"Großmutter","おかし":"Süßigkeiten","つくる":"machen","じょうず":"geschickt, gut in etwas","だんご":"Reisklößchen (Dango)","こめ":"Reis","こな":"Mehl","いれて":"hineingeben (te-Form)","まるく":"rund","します":"machen","ゆでて":"kochen (te-Form)","あまい":"süß","たれ":"Soße","かけます":"darübergießen","おいしい":"lecker","いう":"sagen"}},
+ {id:"tsuki",t:"つき の うさぎ",de:"Der Hase im Mond",lv:3,s:[["むかし むかし、 やま に うさぎ が すんで いました。","Es war einmal ein Hase, der in den Bergen lebte."],["うさぎ は まいばん つき を みて いました。","Jede Nacht schaute der Hase zum Mond."],["「つき へ いきたい な。」 と うさぎ は おもいました。","„Ich möchte zum Mond“, dachte der Hase."],["ある よる、 つき の ひかり が ながい みち に なりました。","Eines Nachts wurde das Mondlicht zu einem langen Weg."],["うさぎ は その みち を のぼって いきました。","Der Hase stieg den Weg hinauf."],["だから いま も、 つき に は うさぎ が いる の です。","Darum lebt bis heute ein Hase im Mond."]],
+  g:{"むかし":"früher, einst","やま":"Berg","うさぎ":"Hase","すんで":"wohnen (te-Form)","まいばん":"jeden Abend","つき":"Mond","みて":"sehen (te-Form)","おもいました":"dachte","よる":"Nacht","ひかり":"Licht","ながい":"lang","のぼって":"hinaufsteigen (te-Form)"}},
+ {id:"densha",t:"でんしゃ で",de:"Im Zug",lv:3,s:[["あさ の でんしゃ は とても こんで います。","Der Morgenzug ist sehr voll."],["となり の ひと が ほん を よんで いました。","Die Person neben mir las ein Buch."],["それ は わたし も だいすき な ほん でした。","Es war ein Buch, das ich auch sehr mag."],["「その ほん、 おもしろい です よね。」 と こえ を かけました。","„Das Buch ist spannend, nicht wahr?“, sprach ich sie an."],["わたしたち は えき に つく まで ずっと はなしました。","Wir redeten die ganze Zeit, bis wir am Bahnhof ankamen."]],
+  g:{"でんしゃ":"Zug","こんで":"voll sein (te-Form)","となり":"neben, Nachbar","ひと":"Person","よんで":"lesen (te-Form)","おもしろい":"interessant, spannend","こえ":"Stimme","かけました":"ansprechen (mit こえ を)","えき":"Bahnhof","つく":"ankommen","はなしました":"sprach, unterhielt sich"}},
+ {id:"yuki",t:"ゆき の ひ",de:"Ein Schneetag",lv:3,s:[["まど を あける と、 そと は まっしろ でした。","Als ich das Fenster öffnete, war draußen alles weiß."],["よる の あいだ に ゆき が たくさん ふった の です。","In der Nacht hatte es viel geschneit."],["いもうと と いっしょ に ゆきだるま を つくりました。","Mit meiner kleinen Schwester baute ich einen Schneemann."],["はな は にんじん、 め は ちいさい いし です。","Die Nase ist eine Karotte, die Augen sind kleine Steine."],["てぶくろ を して いて も、 て が つめたく なりました。","Obwohl ich Handschuhe trug, wurden meine Hände kalt."],["いえ に はいって、 あつい おちゃ を のみました。","Ich ging hinein und trank heißen Tee."]],
+  g:{"まど":"Fenster","あける":"öffnen","まっしろ":"schneeweiß","よる":"Nacht","あいだ":"während","ゆき":"Schnee","ふった":"fiel (Schnee)","いもうと":"kleine Schwester","ゆきだるま":"Schneemann","にんじん":"Karotte","いし":"Stein","てぶくろ":"Handschuhe","して":"tragen, machen (te-Form)","いて":"(Verlaufsform, te-Form)","つめたく":"kalt","はいって":"hineingehen (te-Form)","あつい":"heiß","おちゃ":"Tee"}},
+ {id:"hon",t:"ふしぎ な ほん",de:"Das seltsame Buch",lv:3,s:[["まち の はずれ に ふるい としょかん が あります。","Am Stadtrand steht eine alte Bibliothek."],["そこ に は ふしぎ な ほん が ある そう です。","Dort soll es ein seltsames Buch geben."],["その ほん を ひらく と、 じぶん の ゆめ が みえる の です。","Wenn man es aufschlägt, sieht man seinen eigenen Traum."],["ある ひ、 ひとり の しょうねん が その ほん を みつけました。","Eines Tages fand ein Junge dieses Buch."],["ほん の なか で は、 しょうねん が そら を とんで いました。","Im Buch flog der Junge durch den Himmel."],["しょうねん は ほん を とじて、 にっこり わらいました。","Der Junge schloss das Buch und lächelte."]],
+  g:{"まち":"Stadt","はずれ":"Rand","ふるい":"alt","としょかん":"Bibliothek","そこ":"dort","ふしぎ":"seltsam, wundersam","ひらく":"öffnen, aufschlagen","じぶん":"selbst","ゆめ":"Traum","みえる":"sichtbar sein","ひとり":"eine Person","そら":"Himmel","とんで":"fliegen (te-Form)","とじて":"schließen (te-Form)"}}
+];
+const LVN=["","Leicht","Mittel","Schwer"],LVC=["","lo","mid","hi"];
+const normR=s=>s.toLowerCase().normalize("NFKC").replace(/ō/g,"ou").replace(/ū/g,"uu").replace(/ā/g,"aa").replace(/ē/g,"ee").replace(/ī/g,"ii").replace(/[^a-z]/g,"")
+  .replace(/sy([auo])/g,"sh$1").replace(/[tc]y([auo])/g,"ch$1").replace(/[zj]y([auo])/g,"j$1").replace(/si/g,"shi").replace(/ti/g,"chi").replace(/tu/g,"tsu").replace(/(^|[^sc])hu/g,"$1fu").replace(/zi/g,"ji");
+/* Automatische Prüfung: passt die Eingabe noch als Anfang einer richtigen Lösung? */
+function isPrefix(raw,targets){const v=normR(raw);if(targets.some(t=>t.startsWith(v)))return true;return "aiueo".split("").some(x=>{const w=normR(raw+x);return targets.some(t=>t.startsWith(w))})}
+/* Bei einem Abbruch schätzen, welches Zeichen gemeint war (für die Verwechslungsanalyse) */
+function guessPicked(item,raw){
+  const v=normR(raw);
+  if(v!=="n"){const ex=ITEMS.find(o=>o.k!==item.k&&accepts(o).map(normR).includes(v));if(ex)return ex.k}
+  const sims=[...(SIM[item.k]||[])].map(k=>BYK[k]).filter(o=>o&&accepts(o).some(a=>normR(a).startsWith(v)));
+  if(sims.length===1)return sims[0].k;
+  const cf=(S.kana[item.k]||{}).cf||{};const known=sims.filter(o=>cf[o.k]).sort((a,b)=>cf[b.k]-cf[a.k]);
+  return known.length?known[0].k:null;
+}
+/* Tippfehler oder echter Fehler?
+   Tippfehler: Eingabe ist gar keine mögliche Silbe (z. B. "kk", "q"), oder die Form passt nicht:
+   Konsonant getippt, obwohl die Lösung ein reiner Vokal ist, bzw. Vokal getippt, obwohl die Lösung mit Konsonant beginnt.
+   Echter Fehler: eine gültige Silbe gleicher Form mit falschem Konsonanten oder Vokal (z. B. "ki" statt "ka", "ga" statt "ka"). */
+const ALLT=[...new Set(ITEMS.flatMap(o=>accepts(o).map(normR)))];
+const isV=c=>"aiueo".includes(c);
+function typoReason(raw,ansRom){
+  const v=normR(raw),a=normR(ansRom);if(!v)return null;
+  const ansVowel=a.length===1&&isV(a);
+  if(ansVowel&&!isV(v[0]))return `Die Lösung ist ein reiner Vokal, du hast mit „${raw[0]}“ begonnen.`;
+  if(!ansVowel&&isV(v[0]))return `Die Lösung beginnt mit einem Konsonanten, du hast mit „${raw[0]}“ begonnen.`;
+  if(!isPrefix(raw,ALLT))return `„${raw}“ ergibt keine gültige Silbe.`;
+  return null;
+}
+function wordTypo(raw,w){
+  const tgt=normR(w.rom),inp=normR(raw);let m=0;while(m<tgt.length&&inp[m]===tgt[m])m++;
+  let acc=0;for(const t of w.syl){const r=normR(t.rom),st=acc;acc+=r.length;
+    if(acc>m||t===w.syl[w.syl.length-1]){
+      if(t.sok||t.long||!r)return null;              // fehlendes っ oder ー: echter Lesefehler
+      const frag=inp.slice(st);if(!frag)return null;
+      return typoReason(frag,r);
+    }}
+  return null;
+}
+function typoFx(inp,msgEl,why){
+  inp.classList.remove("typo-fx");void inp.offsetWidth;inp.classList.add("typo-fx");
+  if(msgEl){if(!msgEl.dataset.orig)msgEl.dataset.orig=msgEl.innerHTML;msgEl.innerHTML=`Tippfehler, nicht gewertet: ${esc(why)} Tipp einfach weiter.`;msgEl.classList.add("typo-msg");
+    clearTimeout(msgEl._t);msgEl._t=setTimeout(()=>{msgEl.innerHTML=msgEl.dataset.orig;msgEl.classList.remove("typo-msg")},2600)}
+}
+const PREP={};
+function prep(st){
+  if(PREP[st.id])return PREP[st.id];
+  const sents=st.s.map(([jp,de])=>{
+    const {T}=translit(jp,{particles:true,macron:false});const parts=[];let cur=null;
+    T.forEach(t=>{
+      if(t.kind==="kana"){if(!cur){cur={type:"w",syl:[]};parts.push(cur)}cur.syl.push(t)}
+      else{cur=null;if(t.kind!=="space")parts.push({type:"p",src:t.src})}
+    });
+    parts.filter(p=>p.type==="w").forEach(w=>{
+      w.kana=w.syl.map(t=>t.src).join("");
+      w.rom=w.syl.map(t=>t.rom).join("");
+      w.alt=w.syl.map(t=>t.part?(t.src==="は"?"ha":"he"):t.src==="を"?"wo":t.rom).join("");
+      w.gloss=st.g[w.kana]||G[w.kana]||"";
+    });
+    return {jp,de,parts,words:parts.filter(p=>p.type==="w")};
+  });
+  const kana=[...new Set(sents.flatMap(s=>s.words.flatMap(w=>w.syl.map(t=>hstr(t.src)).filter(k=>BYK[k]))))];
+  const syl=sents.reduce((a,s)=>a+s.words.reduce((b,w)=>b+w.syl.length,0),0);
+  return PREP[st.id]={sents,kana,syl,words:sents.reduce((a,s)=>a+s.words.length,0)};
+}
+const RD={id:STORIES[0].id,mode:"explore",showRom:false,showDe:false,sel:null,deOn:{},rv:{},t:null};
+const stOf=()=>STORIES.find(s=>s.id===RD.id);
+function knownPct(P){return pct(P.kana.filter(k=>level(k)>0).length,P.kana.length)}
+function renderLesen(){
+  const st=stOf(),P=prep(st),rec=(S.stories||{})[st.id];
+  $("#v-lesen").innerHTML=`<div class="lesen">
+    <div class="stlist" aria-label="Geschichten">
+      <div class="sec-title" style="padding:0 2px 6px"><h3>Geschichten</h3><span class="muted small">${Object.keys(S.stories||{}).length} / ${STORIES.length} gelesen</span></div>
+      ${STORIES.map(x=>{const p=prep(x),r=(S.stories||{})[x.id];return `<button class="st ${x.id===st.id?"on":""}" data-st="${x.id}"><span class="st-t kana">${x.t}</span><span class="st-d">${x.de}</span><span class="st-m"><span class="pill ${LVC[x.lv]}">${LVN[x.lv]}</span>${r?`<span class="pill lo">✓ ${r.best} %</span>`:""}<span class="muted">${p.syl} Silben</span></span></button>`}).join("")}
+    </div>
+    <div class="reader card" id="reader"></div>
+    <div class="rside stack" id="rside" style="gap:14px"></div>
+  </div>`;
+  $$("[data-st]").forEach(b=>b.onclick=()=>{RD.id=b.dataset.st;RD.mode="explore";RD.sel=null;RD.deOn={};RD.rv={};RD.t=null;renderLesen();window.scrollTo(0,0)});
+  renderReader();
+}
+function wordHTML(w,si,wi){
+  const T=RD.t,key=si+"-"+wi;let cls="w",rom=esc(w.rom),show=RD.showRom||RD.rv[key];
+  if(RD.mode==="test"&&T){
+    const r=T.res[key];
+    if(r){cls+=r.ok?" ok":" no";show=true;rom=esc(w.rom)}
+    else{show=false;if(T.si===si&&T.wi===wi)cls+=" cur"}
+  }else if(RD.sel===key)cls+=" sel";
+  return `<button class="${cls}" data-w="${key}" ${RD.mode==="test"?'tabindex="-1"':""}><span class="wk kana">${w.kana}</span><span class="wr ${show?"on":""}">${rom}</span></button>`;
+}
+function renderReader(){
+  const st=stOf(),P=prep(st),T=RD.t;
+  const test=RD.mode==="test";
+  const head=`<div class="rd-head"><div><div class="st-m" style="margin-bottom:6px"><span class="pill ${LVC[st.lv]}">${LVN[st.lv]}</span><span class="muted small">${P.sents.length} Sätze · ${P.words} Wörter · ${P.syl} Silben · du kennst ${knownPct(P)} % der Zeichen</span></div><h2 class="kana rd-title">${st.t}</h2><div class="muted">${st.de}</div></div>
+    <div class="seg rdseg" role="group" aria-label="Lesemodus"><button data-rm="explore" aria-pressed="${!test}"><b>Entdecken</b><small>Wörter antippen, nachschlagen</small></button><button data-rm="test" aria-pressed="${test}"><b>Leseprüfung</b><small>Wort für Wort eintippen</small></button></div></div>`;
+  const tools=test?"":`<div class="rd-tools"><button class="chip" id="tRom" aria-pressed="${RD.showRom}">Romaji zeigen</button><button class="chip" id="tDe" aria-pressed="${RD.showDe}">Übersetzung zeigen</button>${canSpeak()?`<button class="chip" id="tSay">${SPK} Ganze Geschichte vorlesen</button>`:""}<span class="muted small">Tippe auf ein Wort für Lesung und Bedeutung.</span></div>`;
+  const body=P.sents.map((s,si)=>{
+    let wi=-1;const words=s.parts.map(p=>p.type==="p"?`<span class="pu kana">${esc(p.src)}</span>`:wordHTML(p,si,++wi)).join("");
+    const deShown=test?(T&&(T.si>si||T.done)):(RD.showDe||RD.deOn[si]);
+    return `<div class="sent ${test&&T&&T.si===si&&!T.done?"cur":""}" id="sent${si}"><span class="sn num">${si+1}</span><div class="sbody"><div class="jp">${words}</div><div class="de ${deShown?"on":""}">${esc(s.de)}</div></div>${test?"":`<div class="sact">${canSpeak()?`<button class="icon-btn" data-say="${si}" aria-label="Satz vorlesen">${SPK}</button>`:""}<button class="icon-btn" data-de="${si}" aria-label="Übersetzung zeigen" title="Übersetzung">DE</button></div>`}</div>`}).join("");
+  const foot=test&&T&&!T.done?`<form class="rd-in" id="rdForm" autocomplete="off"><span class="muted small num">Wort ${T.n+1} / ${P.words}</span><span class="rd-typo" id="rdTypo"></span><input id="rdIn" placeholder="Romaji des markierten Worts …" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Romaji des markierten Worts"><button class="btn ghost" type="button" id="rdSkip" ${T.pause?"disabled":""}>Weiß nicht</button>${T.pause?`<span class="rd-fb">Falsch: „${esc(T.last.typed||"–")}“ · richtig: <b>${esc(T.last.w.rom)}</b></span>`:""}</form>`:"";
+  $("#reader").innerHTML=head+tools+(test&&T&&T.done?resultHTML():"")+`<div class="sents">${body}</div>`+foot;
+  $$("[data-rm]").forEach(b=>b.onclick=()=>{if(b.dataset.rm==="test")startReadTest();else{RD.mode="explore";RD.t=null;renderReader()}});
+  if(!test){
+    $("#tRom").onclick=()=>{RD.showRom=!RD.showRom;renderReader()};
+    $("#tDe").onclick=()=>{RD.showDe=!RD.showDe;renderReader()};
+    const ts=$("#tSay");if(ts)ts.onclick=()=>say(st.s.map(x=>x[0].replace(/ /g,"")).join(""));
+    $$("[data-say]").forEach(b=>b.onclick=()=>say(st.s[+b.dataset.say][0].replace(/ /g,"")));
+    $$("[data-de]").forEach(b=>b.onclick=()=>{const i=+b.dataset.de;RD.deOn[i]=!RD.deOn[i];renderReader()});
+    $$("#reader .w").forEach(b=>b.onclick=()=>{const k=b.dataset.w;RD.rv[k]=true;RD.sel=k;renderReader();const [si,wi]=k.split("-").map(Number);const w=P.sents[si].words[wi];if(S.settings.autoSpeak)say(w.kana)});
+  }else if(T&&!T.done){
+    const inp=$("#rdIn");inp.focus();
+    const target=()=>{const w=P.sents[T.si].words[T.wi];return [normR(w.rom),normR(w.alt)]};
+    if(T.pause)inp.disabled=true;
+    let lastOk="";
+    inp.oninput=()=>{if(T.pause)return;const raw=inp.value.trim().toLowerCase();const v=normR(raw);if(!v){lastOk="";return}
+      if(target().includes(v))return readAnswer(true,raw);
+      if(isPrefix(raw,target())){lastOk=inp.value;return}
+      const w=P.sents[T.si].words[T.wi],why=wordTypo(raw,w);
+      if(why){inp.value=lastOk;T.typos=(T.typos||0)+1;S.typos=(S.typos||0)+1;save();typoFx(inp,$("#rdTypo"),why);renderRside();return}
+      readAnswer(false,raw)};
+    inp.onkeydown=e=>{if(e.key===" ")e.preventDefault()};
+    $("#rdForm").onsubmit=e=>e.preventDefault();
+    $("#rdSkip").onclick=()=>readAnswer(false,"");
+    const c=$("#reader .w.cur");if(c&&c.scrollIntoView)c.scrollIntoView({block:"nearest",behavior:"smooth"});
+  }
+  if(test&&T&&T.done){bindResult()}
+  renderRside();
+}
+function renderRside(){
+  const st=stOf(),P=prep(st),T=RD.t;
+  let top="";
+  if(RD.mode==="test"&&T){
+    const n=T.ok+T.bad,min=Math.max((T.done?T.end:Date.now())-T.start,1000)/60000;
+    top=`<div class="card"><h3 style="margin-bottom:12px">Leseprüfung</h3><div class="live"><div><b class="num" style="color:var(--good)">${T.ok}</b><span>Wörter richtig</span></div><div><b class="num" style="color:var(--bad)">${T.bad}</b><span>Wörter falsch</span></div><div><b class="num">${n?pct(T.ok,n)+" %":"–"}</b><span>Trefferquote</span></div><div><b class="num">${T.sylDone?Math.round(T.sylDone/min):"–"}</b><span>Silben pro Minute</span></div><div><b class="num" style="color:var(--warn)">${T.typos||0}</b><span>Tippfehler (nicht gewertet)</span></div></div>
+      <p class="muted small" style="margin:12px 0 0">Tippe die Lesung des markierten Worts. Es gibt keinen Prüfen-Knopf: Richtiges geht sofort weiter, sobald ein Buchstabe nicht mehr passt, zählt das Wort als Fehler. Partikel: は = wa, へ = e, を = o. Langes おう darfst du als ou oder ō schreiben.</p></div>`;
+    if(T.last){const w=T.last.w;top+=`<div class="card"><h3 style="margin-bottom:10px">Zuletzt</h3>${winfo(w,T.last.ok?"":`Du hast „${esc(T.last.typed||"–")}“ geschrieben.`)}</div>`}
+  }else{
+    const sel=RD.sel&&RD.sel.split("-").map(Number);
+    top=`<div class="card">${sel?winfo(P.sents[sel[0]].words[sel[1]]):`<h3 style="margin-bottom:6px">Wort</h3><div class="empty-note">Tippe im Text auf ein Wort. Hier siehst du dann Lesung, Bedeutung und die einzelnen Silben.</div>`}</div>`;
+  }
+  const rec=(S.stories||{})[st.id];
+  $("#rside").innerHTML=top+`<div class="card"><div class="sec-title" style="margin-bottom:10px"><h3>Zeichen in dieser Geschichte</h3><span class="muted small num">${P.kana.length}</span></div>
+    <div class="kchips">${P.kana.map(k=>`<button class="kc" data-k="${k}" title="${k} ${esc(BYK[k].lbl)} · ${LEVELS[level(k)]}"><span class="kana">${k}</span><i style="background:var(--m${level(k)})"></i></button>`).join("")}</div>
+    <div class="legend" style="margin-top:10px">${LEVELS.map((l,n)=>`<span><i style="background:var(--m${n})"></i>${l}</span>`).join("")}</div></div>
+    ${rec?`<div class="card"><h3 style="margin-bottom:10px">Deine Bestwerte</h3><div class="live"><div><b class="num">${rec.best} %</b><span>Beste Trefferquote</span></div><div><b class="num">${rec.speed}</b><span>Silben pro Minute</span></div><div><b class="num">${rec.reads}</b><span>Mal gelesen</span></div></div></div>`:""}`;
+  $$("#rside [data-k]").forEach(b=>b.onclick=()=>showDetail(b.dataset.k));
+}
+function winfo(w,note){
+  return `<div class="winfo"><div class="wbig kana">${w.kana}</div><div class="wrom">${esc(w.rom)}</div>${w.gloss?`<div>${esc(w.gloss)}</div>`:`<div class="muted small">Keine Bedeutung hinterlegt.</div>`}${note?`<div class="small" style="color:var(--bad)">${note}</div>`:""}
+    <div class="kchips" style="margin-top:6px">${w.syl.map(t=>{const h=hstr(t.src);return `<button class="kc syl2" ${BYK[h]?`data-k="${h}"`:"disabled"}><span class="kana">${t.src}</span><small>${esc(t.rom||"·")}</small></button>`}).join("")}</div>
+    ${canSpeak()?`<button class="btn ghost sm" data-sayw="${esc(w.kana)}" style="align-self:flex-start">${SPK} Anhören</button>`:""}</div>`;
+}
+document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-sayw]");if(b)say(b.dataset.sayw)});
+function startReadTest(){
+  RD.mode="test";RD.sel=null;
+  RD.t={si:0,wi:0,n:0,ok:0,bad:0,sylDone:0,start:Date.now(),qStart:Date.now(),res:{},mist:{},done:false,last:null};
+  renderReader();
+}
+function readAnswer(ok,typed){
+  const T=RD.t,P=prep(stOf());if(!T||T.done)return;
+  const w=P.sents[T.si].words[T.wi],ms=Date.now()-T.qStart;
+  T.res[T.si+"-"+T.wi]={ok};T.last={w,ok,typed};
+  const per=ms/Math.max(1,w.syl.length);
+  if(ok){T.ok++;T.sylDone+=w.syl.length;w.syl.forEach(t=>{const h=hstr(t.src);if(BYK[h])record(BYK[h],true,per,null,"quiz")})}
+  else{
+    T.bad++;
+    // Fehlerhafte Silbe über den ersten abweichenden Buchstaben finden
+    const tgt=normR(w.rom),inp=normR(typed);let m=0;while(m<tgt.length&&inp[m]===tgt[m])m++;
+    let acc=0,bad=w.syl[w.syl.length-1];for(const t of w.syl){acc+=normR(t.rom).length;if(acc>m){bad=t;break}}
+    const h=hstr(bad.src);if(BYK[h]&&!bad.part&&bad.src!=="を"){record(BYK[h],false,ms,null,"quiz");T.mist[h]=(T.mist[h]||0)+1}
+  }
+  T.n++;T.wi++;
+  if(T.wi>=P.sents[T.si].words.length){T.si++;T.wi=0}
+  T.qStart=Date.now();
+  if(!ok&&T.si<P.sents.length){T.pause=true;renderReader();setTimeout(()=>{if(RD.t!==T)return;T.pause=false;T.qStart=Date.now();renderReader()},1300);return}
+  if(T.si>=P.sents.length){
+    T.done=true;T.end=Date.now();
+    const st=stOf(),acc=pct(T.ok,T.ok+T.bad),spd=Math.round(T.sylDone/Math.max((T.end-T.start)/60000,1/60));
+    S.stories=S.stories||{};const r=S.stories[st.id]||{reads:0,best:0,speed:0};
+    r.reads++;r.best=Math.max(r.best,acc);r.speed=Math.max(r.speed,spd);r.last=Date.now();S.stories[st.id]=r;save();
+    T.acc=acc;T.spd=spd;
+    renderLesen();return;
+  }
+  renderReader();
+}
+function resultHTML(){
+  const T=RD.t,mk=Object.entries(T.mist).sort((a,b)=>b[1]-a[1]),dur=T.end-T.start;
+  const i=STORIES.findIndex(s=>s.id===RD.id),nx=STORIES[i+1];
+  return `<div class="rd-res"><div><div class="muted small">Geschichte gelesen</div><div class="res-big num" style="font-size:44px">${T.acc} %</div><div class="muted small">${T.ok} von ${T.ok+T.bad} Wörtern richtig · ${T.spd} Silben pro Minute · ${Math.floor(dur/60000)}:${String(Math.floor(dur/1000)%60).padStart(2,"0")} min</div></div>
+    ${mk.length?`<div class="mistakes">${mk.map(([k,c])=>`<span class="mk"><span class="kana">${k}</span>${esc(BYK[k].lbl)}${c>1?` <small>×${c}</small>`:""}</span>`).join("")}</div>`:`<div>Fehlerfrei gelesen.</div>`}
+    <div class="row-btns" style="justify-content:flex-start">${mk.length?`<button class="btn primary sm" id="rdRetry">Fehler gezielt üben</button>`:""}<button class="btn ghost sm" id="rdAgain">Nochmal lesen</button>${nx?`<button class="btn ghost sm" id="rdNext">Nächste Geschichte</button>`:""}</div></div>`;
+}
+function bindResult(){
+  const T=RD.t,mk=Object.keys(T.mist);
+  const r=$("#rdRetry");if(r)r.onclick=()=>startSession("retry",{pool:mk.map(k=>BYK[k])});
+  $("#rdAgain").onclick=startReadTest;
+  const n=$("#rdNext");if(n)n.onclick=()=>{const i=STORIES.findIndex(s=>s.id===RD.id);RD.id=STORIES[i+1].id;RD.mode="explore";RD.t=null;RD.sel=null;RD.rv={};RD.deOn={};renderLesen();window.scrollTo(0,0)};
+}
+
+/* ---------- Tabelle ---------- */
+const REPB=[{max:0,l:"0×",c:"var(--m0)"},{max:4,l:"1–4×",c:"color-mix(in srgb,var(--accent) 25%,var(--surface))"},{max:9,l:"5–9×",c:"color-mix(in srgb,var(--accent) 50%,var(--surface))"},{max:19,l:"10–19×",c:"color-mix(in srgb,var(--accent) 75%,var(--surface))"},{max:Infinity,l:"20× und mehr",c:"var(--accent)"}];
+const repBucket=n=>REPB.findIndex(b=>n<=b.max);
+function renderTable(){
+  const col5=["a","i","u","e","o"],col3=["a","u","o"];
+  const hot=new Set();confusionPairs().forEach(p=>{if(p.c>=2){hot.add(p.a);hot.add(p.b)}});
+  const reps=S.settings.tableMode==="reps";
+  const cellH=(i,on)=>{const n=(S.kana[i.k]||{}).n||0,col=reps?REPB[repBucket(n)].c:`var(--m${level(i.k)})`;
+    return `<button class="cell ${on?"":"inactive"}" data-k="${i.k}" aria-label="${i.k} ${esc(i.lbl)}, ${reps?n+" Wiederholungen":LEVELS[level(i.k)]}">${hot.has(i.k)?'<span class="warn" title="Häufig verwechselt"></span>':""}${reps?`<span class="reps num">${n}×</span>`:""}<span class="kana">${i.k}</span><small>${esc(i.lbl)}</small><span class="mb" style="background:${col}"></span></button>`};
+  const sec=g=>{
+    const rows=ROWS.filter(r=>r.g===g),c=g==="yoon"?col3:col5,on=S.settings.groups[g];
+    let cells="";
+    rows.forEach(r=>{const its=ITEMS.filter(i=>i.row===r.id);
+      if(r.id==="nn"){cells+=cellH(its[0],on)+'<div class="cell empty"></div>'.repeat(4);return}
+      c.forEach(v=>{const it=its.find(i=>i.v===v);cells+=it?cellH(it,on):'<div class="cell empty"></div>'})});
+    return `<div class="stack" style="gap:12px"><div class="sec-title"><h3>${GROUPS[g].name}</h3><span class="muted small">${on?"aktiv":"nicht aktiv"} · ${reps?(()=>{const its=ITEMS.filter(i=>i.g===g),t=its.reduce((a,i)=>a+((S.kana[i.k]||{}).n||0),0);return `${t} Wiederholungen · Ø ${(t/its.length).toFixed(1).replace(".",",")}`})():`${ITEMS.filter(i=>i.g===g&&level(i.k)===3).length} / ${ITEMS.filter(i=>i.g===g).length} beherrscht`}</span></div><div class="ktable ${g==="yoon"?"c3":"c5"} ${reps?"rp":""}">${cells}</div></div>`;
+  };
+  $("#v-tabelle").innerHTML=`<div class="stack" style="gap:24px">
+    <div class="sec-title"><div><h2>Alle Zeichen</h2><p class="muted" style="margin:4px 0 0">Tippe auf ein Zeichen für Details, ähnliche Zeichen${canSpeak()?" und Aussprache":""}.</p></div><div class="tblhead"><div class="seg tblseg" role="group" aria-label="Kategorisierung"><button data-tm="level" aria-pressed="${!reps}">Lernstand</button><button data-tm="reps" aria-pressed="${reps}">Wiederholungen</button></div>${reps?`<div class="legend">${REPB.map(b=>`<span><i style="background:${b.c}"></i>${b.l}</span>`).join("")}<span><i style="background:var(--bad);border-radius:50%"></i>Oft verwechselt</span></div>`:`<div class="legend" aria-label="Lernstände – mit der Maus darüberfahren für Erklärungen">${LEVELS.map((l,n)=>`<span class="lvwrap"><span class="lvbtn" tabindex="0" aria-describedby="lvpop${n}"><i style="background:var(--m${n})"></i>${l}</span><div class="lvpop" role="tooltip" id="lvpop${n}">${levelInfoHTML(n)}</div></span>`).join("")}<span class="lvwrap"><span class="lvbtn" tabindex="0" aria-describedby="lvpopcf"><i style="background:var(--bad);border-radius:50%"></i>Oft verwechselt</span><div class="lvpop" role="tooltip" id="lvpopcf">${levelInfoHTML("cf")}</div></span></div>`}</div></div>
+    <div class="tables">${sec("basic")}${sec("daku")}${sec("yoon")}</div></div>`;
+  $$("#v-tabelle .cell[data-k]").forEach(b=>b.onclick=()=>showDetail(b.dataset.k));
+  $$("#v-tabelle [data-tm]").forEach(b=>b.onclick=()=>{S.settings.tableMode=b.dataset.tm;save();renderTable()});
+  $$("#v-tabelle .lvpop [data-dk]").forEach(b=>b.onclick=()=>showDetail(b.dataset.dk));
+  bindLvPops();
+}
+/* Erklärung der Lernstände */
+const LV_INFO=[
+ {t:"Neu",p:"Dieses Zeichen wurde dir noch nie abgefragt.",how:["Sobald du es in irgendeinem Modus einmal beantwortest, egal ob richtig oder falsch, ist es nicht mehr neu.","Die Lernsitzung stellt dir pro Durchgang einige neue Zeichen vor (einstellbar in den Einstellungen)."]},
+ {t:"Lernend",p:"Du hast das Zeichen schon geübt, kannst es aber noch nicht sicher. Es steht auf Stufe 1 oder 2 von 6.",how:["Wiederholungsabstand: 10 Minuten (Stufe 1) bzw. 1 Stunde (Stufe 2).","Jede richtige Antwort zu einem fälligen Zeitpunkt hebt es eine Stufe an.","Nach einem Fehler fällt ein Zeichen zwei Stufen zurück, mindestens auf Stufe 1, und kommt nach 10 Minuten wieder."]},
+ {t:"Gefestigt",p:"Du hast das Zeichen mehrmals zu den fälligen Zeitpunkten richtig gelesen. Es steht auf Stufe 3 von 6.",how:["Die nächste Wiederholung ist nach 1 Tag fällig.","Liest du es dann richtig, steigt es zu „Beherrscht“ auf.","Ein Fehler wirft es auf Stufe 1 zurück, also wieder zu „Lernend“."]},
+ {t:"Beherrscht",p:"Du hast das Zeichen über mehrere Tage hinweg zuverlässig richtig gelesen. Es steht auf Stufe 4 bis 6.",how:["Die Abstände wachsen weiter: 3 Tage, 1 Woche, dann 3 Wochen.","So bleibt das Zeichen im Langzeitgedächtnis, ohne dass du es ständig üben musst.","Auch hier gilt: Ein Fehler setzt es zwei Stufen zurück."]}
+];
+/* Hoverfenster der Legende: innerhalb des Bildschirms platzieren, kurze Verzögerung beim Verlassen */
+function placeLvPop(w){
+  const btn=$(".lvbtn",w),pop=$(".lvpop",w);
+  pop.style.maxHeight="";pop.style.left="0px";pop.style.top="0px";
+  const r=btn.getBoundingClientRect(),vw=innerWidth,vh=innerHeight,m=8,wd=pop.offsetWidth,h=pop.offsetHeight;
+  const left=Math.min(Math.max(r.left+r.width/2-wd/2,m),Math.max(m,vw-wd-m));
+  const below=vh-m-(r.bottom+6),above=r.top-6-m;
+  let top;
+  if(h<=below)top=r.bottom+6;                       // passt unterhalb
+  else if(h<=above)top=r.top-6-h;                   // passt oberhalb
+  else if(below>=above){top=r.bottom+6;pop.style.maxHeight=below+"px"}   // sonst scrollbar im größeren Bereich
+  else{top=m;pop.style.maxHeight=above+"px"}
+  pop.style.left=left+"px";pop.style.top=top+"px";
+}
+function bindLvPops(){
+  $$("#v-tabelle .lvwrap").forEach(w=>{
+    const btn=$(".lvbtn",w);let t=null;
+    const show=()=>{clearTimeout(t);$$("#v-tabelle .lvwrap.open").forEach(o=>o!==w&&o.classList.remove("open"));w.classList.add("open");placeLvPop(w)};
+    const hide=()=>{clearTimeout(t);t=setTimeout(()=>w.classList.remove("open"),180)};
+    w.onmouseenter=show;w.onmouseleave=hide;btn.onfocus=show;btn.onblur=()=>{if(!w.matches(":hover"))hide()};
+    btn.onclick=()=>w.classList.contains("open")?w.classList.remove("open"):show();
+  });
+}
+const relayoutLvPops=()=>$$("#v-tabelle .lvwrap.open").forEach(placeLvPop);
+window.addEventListener("scroll",relayoutLvPops,{passive:true});window.addEventListener("resize",relayoutLvPops);
+function levelInfoHTML(lv){
+  let title,color,text,how,items;
+  if(lv==="cf"){
+    const cnt={};confusionPairs().forEach(p=>{if(p.c>=2){cnt[p.a]=(cnt[p.a]||0)+p.c;cnt[p.b]=(cnt[p.b]||0)+p.c}});
+    title="Oft verwechselt";color="var(--bad)";text="Der rote Punkt markiert Zeichen, die du mindestens zweimal mit demselben anderen Zeichen verwechselt hast.";
+    how=["Eine Verwechslung wird erfasst, wenn du statt des richtigen Zeichens ein bestimmtes anderes wählst oder eintippst.","Unter „Ähnlichkeiten“ siehst du deine Paare mit Tipps, wie man sie auseinanderhält, und kannst sie gezielt üben.","Der Punkt bleibt, solange die Verwechslungen in deiner Statistik stehen. Sie zeigen, worauf du achten solltest."];
+    items=Object.keys(cnt).filter(k=>BYK[k]).sort((a,b)=>cnt[b]-cnt[a]);
+  }else{
+    const n=+lv,I=LV_INFO[n];title=I.t;color=`var(--m${n})`;text=I.p;how=I.how;
+    items=ITEMS.filter(i=>level(i.k)===n).map(i=>i.k);
+  }
+  const stair=lv==="cf"?"":`<div class="stairs">${LEVELS.map((l,n)=>`<div class="${String(n)===String(lv)?"on":""}"><i style="background:var(--m${n})"></i><b>${l}</b><small>${["noch nie geübt","Stufe 1–2","Stufe 3","Stufe 4–6"][n]}</small></div>`).join('<span class="arr">→</span>')}</div>`;
+  return `<div class="lvpop-in"><h3 style="display:flex;align-items:center;gap:10px"><i style="width:14px;height:14px;border-radius:${lv==="cf"?"50%":"4px"};background:${color};display:inline-block"></i>${title}</h3>
+    <p style="margin:0">${text}</p>${stair}
+    <ul class="lvhow">${how.map(h=>`<li>${h}</li>`).join("")}</ul>
+    <div><div class="sec-title" style="margin-bottom:8px"><h3>Deine Zeichen in diesem Stand</h3><span class="muted small num">${items.length}</span></div>
+    ${items.length?`<div class="kchips">${items.map(k=>`<button class="kc" data-dk="${k}" title="${k} ${esc(BYK[k].lbl)}"><span class="kana">${k}</span><small>${esc(BYK[k].lbl)}</small></button>`).join("")}</div>`:`<div class="empty-note">Aktuell keine.</div>`}</div></div>`;
+}
+function showDetail(k){
+  const i=BYK[k],s=S.kana[k]||{n:0,c:0,b:0,d:0,ms:0,cf:{}};
+  const cf=Object.entries(s.cf||{}).filter(([o])=>BYK[o]).sort((a,b)=>b[1]-a[1]).slice(0,4);
+  const due=s.n?(s.d<=Date.now()?"jetzt":"in "+fmtDur(s.d-Date.now())):"–";
+  const sims=[...(SIM[k]||[])].filter(x=>BYK[x]);
+  openModal(`<div class="dlg-head"><h3>${GROUPS[i.g].name} · ${rowName(i.row)}</h3><button class="icon-btn" data-close aria-label="Schließen">✕</button></div>
+    <div class="detail"><div class="detail-k kana">${k}</div><div class="stack" style="gap:8px"><div style="font-size:26px;font-weight:800">${esc(i.lbl)}</div>${accepts(i).length>1?`<div class="muted small">auch akzeptiert: ${accepts(i).filter(a=>a!==i.r).join(", ")}</div>`:""}${canSpeak()?`<button class="btn ghost sm" id="dsp" style="align-self:flex-start">${SPK} Anhören</button>`:""}</div></div>
+    <div class="kv"><div><b>${LEVELS[level(k)]}</b><span>Status (Stufe ${s.b} von 6)</span></div><div><b class="num">${s.n?pct(s.c,s.n)+" %":"–"}</b><span>Trefferquote · ${s.n}× geübt</span></div><div><b class="num">${s.c?fmtS(s.ms/s.c):"–"}</b><span>Ø Reaktionszeit</span></div><div><b>${due}</b><span>Nächste Wiederholung</span></div></div>
+    ${cf.length?`<div><h3 style="margin-bottom:8px">Von dir verwechselt mit</h3><div class="mistakes">${cf.map(([o,c])=>`<button class="mk" style="border:0" data-pa="${k}" data-pb="${o}"><span class="kana">${o}</span>${esc(BYK[o].lbl)} <small>×${c}</small></button>`).join("")}</div></div>`:""}
+    ${sims.length?`<div><h3 style="margin-bottom:10px">Verwechslungsgefahr</h3><div class="tiplist">${sims.slice(0,6).map(o=>`<div class="tip"><span class="pk">${k}<em>/</em>${o}</span><span>${esc(pairTip(k,o)||`${o} = ${BYK[o].lbl}`)}</span></div>`).join("")}</div></div>
+    <button class="btn primary sm" id="dDrill" style="align-self:flex-start">Mit ähnlichen Zeichen üben</button>`:""}`);
+  const d=$("#dsp");if(d)d.onclick=()=>say(k);
+  bindPairs($("#dlg"));
+  const dd=$("#dDrill");if(dd)dd.onclick=()=>{closeModal();startSession("drill",{set:[k,...sims.slice(0,5)],title:k})};
+}
+
+/* ---------- Statistik ---------- */
+function renderStats(){
+  const all=ITEMS,act=active();
+  const tot=Object.values(S.kana).reduce((a,s)=>({n:a.n+s.n,c:a.c+s.c,ms:a.ms+s.ms}),{n:0,c:0,ms:0});
+  const lv=[0,0,0,0];act.forEach(i=>lv[level(i.k)]++);
+  const best=Object.values(S.days).reduce((m,d)=>Math.max(m,d.a),0);
+  const cp=confusionPairs().filter(x=>BYK[x.a]&&BYK[x.b]);
+  const totalConf=cp.reduce((a,p)=>a+p.c,0),wrongTotal=tot.n-tot.c;
+  const days=[];for(let n=29;n>=0;n--){const t=Date.now()-n*DAY;days.push({d:new Date(t),v:S.days[dayKey(t)]||{a:0,c:0}})}
+  const goal=S.settings.goal,nice=Math.ceil(Math.max(10,goal,...days.map(d=>d.v.a))/10)*10;
+  const W=900,H=200,pl=34,pb=24,pt=10,bw=(W-pl-6)/30;
+  let svg=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Antworten pro Tag, letzte 30 Tage">`;
+  [0,.5,1].forEach(f=>{const y=pt+(H-pt-pb)*(1-f);svg+=`<line x1="${pl}" x2="${W}" y1="${y}" y2="${y}" stroke="var(--line)"/><text x="${pl-6}" y="${y+4}" text-anchor="end">${Math.round(nice*f)}</text>`});
+  days.forEach((d,n)=>{const h=(H-pt-pb)*d.v.a/nice,x=pl+n*bw+2,y=H-pb-h,accR=d.v.a?d.v.c/d.v.a:0;
+    if(d.v.a){
+      // Balken in Runden zum Tagesziel aufteilen, jede Runde in der Farbe des Tagesziel-Kreises
+      let g="",from=0,k=0;const sc=(H-pt-pb)/nice;
+      while(from<d.v.a){const to=Math.min(d.v.a,from+goal),y0=H-pb-to*sc,hh=(to-from)*sc;g+=`<rect x="${x}" y="${y0}" width="${bw-4}" height="${Math.max(hh,1)}" rx="${to===d.v.a?3:0}" fill="${lapColor(k)}"/>`;from=to;k++}
+      svg+=`<g><title>${d.d.toLocaleDateString("de-DE")}: ${d.v.a} Antworten (${(d.v.a/goal).toFixed(1).replace(".",",")}× Tagesziel), ${pct(d.v.c,d.v.a)} % richtig</title>${g}</g>`;
+    }else svg+=`<rect x="${x}" y="${H-pb-2}" width="${bw-4}" height="2" rx="1" fill="var(--line)"/>`;
+    if(n%7===1||n===29)svg+=`<text x="${x+(bw-4)/2}" y="${H-6}" text-anchor="middle">${n===29?"heute":d.d.getDate()+"."+(d.d.getMonth()+1)+"."}</text>`});
+  {const gy=pt+(H-pt-pb)*(1-goal/nice);svg+=`<line x1="${pl}" x2="${W}" y1="${gy}" y2="${gy}" stroke="var(--ink)" stroke-opacity=".45" stroke-dasharray="4 4"/><text x="${pl+6}" y="${gy-5}" text-anchor="start">Tagesziel ${goal}</text>`}
+  svg+="</svg>";
+  const weak=all.filter(i=>S.kana[i.k]&&S.kana[i.k].n>=2).map(i=>({i,s:S.kana[i.k],acc:S.kana[i.k].c/S.kana[i.k].n})).sort((a,b)=>a.acc-b.acc||b.s.n-a.s.n).slice(0,6);
+  const slow=all.filter(i=>S.kana[i.k]&&S.kana[i.k].c>=2).map(i=>({i,t:S.kana[i.k].ms/S.kana[i.k].c})).sort((a,b)=>b.t-a.t).slice(0,6);
+  const rowStats=ROWS.map(r=>{const a=ITEMS.filter(i=>i.row===r.id).reduce((x,i)=>{const s=S.kana[i.k];return s?{n:x.n+s.n,c:x.c+s.c}:x},{n:0,c:0});return {r,a}}).filter(x=>x.a.n>0);
+  const accCol=a=>a>=.9?"var(--m3)":a>=.75?"var(--m2)":a>=.5?"var(--m1)":"var(--bad)";
+  const heat=all.filter(i=>S.kana[i.k]&&S.kana[i.k].n).map(i=>{const s=S.kana[i.k],a=s.c/s.n;return `<div class="hc kana" title="${i.k} ${esc(i.lbl)}: ${pct(s.c,s.n)} % bei ${s.n} Versuchen" style="background:color-mix(in srgb,${accCol(a)} ${Math.round(18+40*Math.min(1,s.n/10))}%,var(--surface))">${i.k}</div>`}).join("");
+  const grpRisk=CONF.map(g=>({g,n:groupConf(g)})).filter(x=>x.n>0).sort((a,b)=>b.n-a.n).slice(0,6);
+  const maxG=Math.max(1,...grpRisk.map(x=>x.n));
+  const empty=t=>`<div class="empty-note">${t}</div>`;
+  $("#v-statistik").innerHTML=`<div class="stack">
+    <div class="sec-title"><h2>Statistik</h2><span class="muted small">${S.sessions} Sitzungen abgeschlossen</span></div>
+    <div class="stat-tiles">
+      <div class="tile"><b class="num">${tot.n}</b><span>Antworten gesamt</span></div>
+      <div class="tile"><b class="num">${tot.n?pct(tot.c,tot.n)+" %":"–"}</b><span>Trefferquote${S.typos?` · ${S.typos} Tippfehler nicht gewertet`:""}</span></div>
+      <div class="tile"><b class="num">${fmtDur(S.totalMs)}</b><span>Reine Antwortzeit</span></div>
+      <div class="tile"><b class="num">${streak()}</b><span>Tage in Folge</span></div>
+      <div class="tile"><b class="num">${tot.c?fmtS(tot.ms/tot.c):"–"}</b><span>Ø Reaktionszeit</span></div>
+      <div class="tile"><b class="num">${wrongTotal?pct(totalConf,wrongTotal)+" %":"–"}</b><span>Fehler durch Verwechslung</span></div>
+    </div>
+    <div class="srow">
+      <div class="card stack chart" style="gap:10px"><div class="sec-title"><h3>Aktivität, letzte 30 Tage</h3><span class="muted small">Bester Tag: ${best} Antworten · Farben wie beim Tagesziel-Kreis, jede volle Runde eine neue Farbe</span></div>${svg}</div>
+      <div class="card stack" style="gap:12px">
+        <div class="sec-title"><h3>Lernfortschritt</h3><span class="muted num small">${pct(lv[3],act.length)} % beherrscht</span></div>
+        <div class="stack-bar" style="height:14px">${[1,2,3].map(n=>`<i style="width:${lv[n]/act.length*100}%;background:var(--m${n})" title="${LEVELS[n]}: ${lv[n]}"></i>`).join("")}</div>
+        <div class="lv4">${LEVELS.map((l,n)=>`<div class="lvi"><i style="width:10px;height:10px;border-radius:3px;background:var(--m${n})"></i><span>${l}</span><b class="num">${lv[n]}</b></div>`).join("")}</div>
+        <div class="muted" style="font-size:12px;margin-top:auto">Beherrscht heißt: über mehrere Tage hinweg richtig gelesen (Wiederholungsabstand ab 3 Tagen). Gilt für die aktiven Gruppen.</div>
+      </div>
+    </div>
+    <div class="masonry">
+      <div class="card"><div class="sec-title" style="margin-bottom:8px"><h3>Häufige Verwechslungen</h3>${cp.length?`<button class="btn ghost sm" data-goto="aehnlich">Details</button>`:""}</div><div class="list">${cp.length?cp.slice(0,6).map(p=>`<button class="li pairrow" data-pa="${p.a}" data-pb="${p.b}" style="grid-template-columns:96px 1fr auto"><span class="pk" style="font-size:24px">${p.a}<em>↔</em>${p.b}</span><span class="muted small">${esc(BYK[p.a].lbl)} / ${esc(BYK[p.b].lbl)}</span><b class="num">${p.c}×</b></button>`).join(""):empty("Noch keine Verwechslungen erfasst.")}</div></div>
+      <div class="card"><h3 style="margin-bottom:8px">Schwächste Zeichen</h3><div class="list">${weak.length?weak.map(w=>`<div class="li"><span class="kana">${w.i.k}</span><div><b>${esc(w.i.lbl)}</b> <span class="muted" style="font-size:12.5px">· ${w.s.n}× geübt</span><div class="mini"><i style="width:${w.acc*100}%;background:${accCol(w.acc)}"></i></div></div><b class="num">${Math.round(w.acc*100)} %</b></div>`).join(""):empty("Noch zu wenige Daten. Übe ein paar Runden.")}</div></div>
+      <div class="card"><h3 style="margin-bottom:12px">Gefährlichste Gruppen</h3>${grpRisk.length?grpRisk.map(x=>`<div class="rowacc" style="grid-template-columns:110px 1fr 36px"><span class="kana">${x.g.k.slice(0,4).join(" ")}</span><div class="mini" style="margin:0"><i style="width:${x.n/maxG*100}%;background:var(--bad)"></i></div><b class="num" style="text-align:right">${x.n}×</b></div>`).join(""):empty("Noch keine Verwechslungen innerhalb der Gruppen.")}</div>
+      <div class="card"><h3 style="margin-bottom:12px">Trefferquote nach Reihe</h3>${rowStats.length?rowStats.map(x=>{const a=x.a.c/x.a.n;return `<div class="rowacc"><span class="kana">${rowName(x.r.id)}</span><div class="mini" style="margin:0"><i style="width:${a*100}%;background:${accCol(a)}"></i></div><b class="num" style="text-align:right">${Math.round(a*100)} %</b></div>`}).join(""):empty("Noch keine Daten.")}</div>
+      <div class="card"><h3 style="margin-bottom:8px">Langsamste Zeichen</h3><div class="list">${slow.length?slow.map(w=>`<div class="li"><span class="kana">${w.i.k}</span><b>${esc(w.i.lbl)}</b><b class="num">${fmtS(w.t)}</b></div>`).join(""):empty("Noch zu wenige Daten.")}</div></div>
+    </div>
+    <div class="card stack" style="gap:12px"><h3>Trefferquote pro Zeichen</h3>${heat?`<div class="heat">${heat}</div><div class="legend"><span><i style="background:var(--bad)"></i>unter 50 %</span><span><i style="background:var(--m1)"></i>50–74 %</span><span><i style="background:var(--m2)"></i>75–89 %</span><span><i style="background:var(--m3)"></i>ab 90 %</span><span>Farbstärke = Anzahl Versuche</span></div>`:empty("Noch keine Zeichen geübt.")}</div>
+    <div><button class="btn ghost" id="reset" style="color:var(--bad)">Fortschritt zurücksetzen</button></div>
+  </div>`;
+  $("#reset").onclick=confirmReset;
+  bindPairs($("#v-statistik"));
+  $$("#v-statistik [data-goto]").forEach(b=>b.onclick=()=>go(b.dataset.goto));
+}
+function confirmReset(){
+  openModal(`<div class="dlg-head"><h3>Fortschritt zurücksetzen?</h3><button class="icon-btn" data-close aria-label="Schließen">✕</button></div>
+  <p style="margin:0" class="muted">Alle Statistiken, Wiederholungsstufen, Verwechslungen und Rekorde werden gelöscht. Deine Einstellungen bleiben erhalten. Das lässt sich nicht rückgängig machen.</p>
+  <div class="row-btns" style="justify-content:flex-end"><button class="btn ghost" data-close>Abbrechen</button><button class="btn danger" id="doReset">Endgültig zurücksetzen</button></div>`);
+  $("#doReset").onclick=()=>{const st=S.settings;S=fresh();S.settings=st;save();closeModal();render();toast("Fortschritt zurückgesetzt")};
+}
+
+/* ---------- Einstellungen ---------- */
+function openSettings(){
+  const st=S.settings;
+  const seg=(key,vals)=>`<div class="seg" data-key="${key}">${vals.map(v=>`<button data-v="${v}" aria-pressed="${st[key]===v}">${v}</button>`).join("")}</div>`;
+  openModal(`<div class="dlg-head"><h3 style="display:flex;align-items:center;gap:10px"><span style="color:var(--accent);display:inline-flex"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>Einstellungen</h3><button class="icon-btn" data-close aria-label="Schließen">✕</button></div>
+    <div class="setgrid"><div class="setcol"><h4>Allgemein</h4>
+    <div class="field"><label>Darstellung</label><div class="seg" id="themeSeg">${[["auto","System"],["light","Hell"],["dark","Dunkel"]].map(([v,l])=>`<button data-theme-v="${v}" aria-pressed="${(st.theme||"auto")===v}">${l}</button>`).join("")}</div></div>
+    <div class="field"><label for="goalRange" class="sec-title"><span>Tagesziel (Antworten)</span><b class="num" id="goalVal">${st.goal}</b></label><input type="range" id="goalRange" min="10" max="150" step="5" value="${Math.min(150,st.goal)}"><div class="sec-title muted" style="font-size:11.5px"><span>10</span><span>150</span></div></div>
+    <div class="switch"><div><b style="font-size:13.5px">Intro beim Start zeigen</b><div class="muted" style="font-size:12.5px">Kurze Animation beim Öffnen, mit Klick oder Taste überspringbar</div></div><span style="display:flex;gap:10px;align-items:center"><button class="btn ghost sm" id="introPlay">Abspielen</button><input type="checkbox" id="introOn" ${st.intro!==false?"checked":""}></span></div>
+    <div class="field"><label>Neue Zeichen pro Lernsitzung</label>${seg("newPer",[3,5,8,10])}</div>
+    <div class="switch"><div><b style="font-size:13.5px">Aussprache automatisch abspielen</b><div class="muted" style="font-size:12.5px">${canSpeak()?"Nach jeder Antwort und bei neuen Zeichen":"In diesem Browser ist keine japanische Stimme verfügbar"}</div></div><input type="checkbox" id="autoSpeak" ${st.autoSpeak?"checked":""} ${canSpeak()?"":"disabled"}></div>
+    </div><div class="setcol"><h4>Koch-Methode</h4>
+    <div class="field"><label class="sec-title"><span>Reihenfolge der Zeichen</span><span class="muted" style="font-weight:500;font-size:12px">Stufe ${kochLvl()} von ${kochOrder().length}</span></label>
+      <div class="seg" id="kochSeg">${Object.entries(KOCH_ORDERS).map(([v,l])=>`<button data-ko="${v}" aria-pressed="${(st.kochOrder||"row")===v}">${l}</button>`).join("")}</div>
+      <div class="kochprev kana" id="kochPrev"></div>
+      <div class="sec-title"><span class="muted" style="font-size:12px">Deine Stufe bleibt beim Wechsel erhalten. Freigeschaltet sind die ersten Zeichen der neuen Reihenfolge.</span><span style="display:flex;gap:6px">${(st.kochOrder||"row")==="rand"?`<button class="btn ghost sm" id="kochShuffle">Neu mischen</button>`:""}<button class="btn ghost sm" id="kochReset">Auf Stufe 2 zurücksetzen</button></span></div></div>
+    <div class="field"><label class="sec-title"><span>Antworten bis zur Prüfung</span><span class="muted" style="font-weight:500;font-size:12px">Aufstieg ab 90 % schnell und richtig</span></label>${seg("kochWin",[5,10,15,20,25])}
+      <span class="muted" style="font-size:12px">So viele Antworten werden gesammelt, bevor über die nächste Stufe entschieden wird. Bei 5 heißt das: alle 5 schnell und richtig.</span></div>
+    </div></div>
+    <div class="switch" style="border-top:1px solid var(--line);padding-top:14px"><div><b style="font-size:13.5px">Fortschritt übertragen</b><div class="muted" style="font-size:12.5px">Lernstand als Text kopieren und in einer anderen Version des Trainers (z. B. auf GitHub) wieder einfügen</div></div><span style="display:flex;gap:8px;flex:none"><button class="btn ghost sm" id="bkCopy">Kopieren</button><button class="btn ghost sm" id="bkPaste">Einfügen</button></span></div>
+    <div class="muted" style="font-size:12.5px;border-top:1px solid var(--line);padding-top:12px">Die Lernsitzung nutzt verteilte Wiederholung: Richtig gelesene Zeichen kommen in wachsenden Abständen wieder (10 min, 1 h, 1 Tag, 3 Tage, 1 Woche, 3 Wochen), Fehler setzen den Abstand zurück. Falsche Antwortoptionen werden bevorzugt aus ähnlichen und von dir bereits verwechselten Zeichen gewählt.</div>`,"wide");
+  $$("#dlg .seg").forEach(sg=>$$("button",sg).forEach(b=>b.onclick=()=>{S.settings[sg.dataset.key]=+b.dataset.v;save();$$("button",sg).forEach(x=>x.setAttribute("aria-pressed",x===b));renderGoalMini();if(!SS)render()}));
+  $$("#dlg .seg[data-key=kochWin] button").forEach(b=>b.addEventListener("click",()=>{while(S.koch.win.length>kw())S.koch.win.shift();save()}));
+  $("#bkCopy").onclick=async()=>{const t=JSON.stringify(S);try{await navigator.clipboard.writeText(t);toast("Lernstand kopiert")}catch(e){openModal(`<div class="dlg-head"><h3>Lernstand kopieren</h3><button class="icon-btn" data-close aria-label="Schließen">✕</button></div><p class="muted small" style="margin:0">Das automatische Kopieren wurde blockiert. Markiere den Text und kopiere ihn selbst.</p><textarea id="bkTxt" class="bktxt" readonly>${esc(t)}</textarea>`);const ta=$("#bkTxt");ta.focus();ta.select()}};
+  $("#bkPaste").onclick=()=>{openModal(`<div class="dlg-head"><h3>Lernstand einfügen</h3><button class="icon-btn" data-close aria-label="Schließen">✕</button></div><p class="muted small" style="margin:0">Füge hier den kopierten Text ein. Dein aktueller Lernstand auf diesem Gerät wird dabei ersetzt.</p><textarea id="bkTxt" class="bktxt" placeholder="{&quot;v&quot;:1, …}"></textarea><div class="row-btns" style="justify-content:flex-end"><button class="btn ghost" data-close>Abbrechen</button><button class="btn primary" id="bkDo">Ersetzen</button></div>`);
+    $("#bkDo").onclick=()=>{try{const o=JSON.parse($("#bkTxt").value.trim());if(!o||typeof o!=="object"||!o.kana||!o.settings)throw 0;S=merge(o);save();applyTheme();closeModal();render();renderGoalMini();toast("Lernstand übernommen")}catch(e){toast("Das ist kein gültiger Lernstand.")}}};
+  $("#introOn").onchange=e=>{S.settings.intro=e.target.checked;save()};
+  $("#introPlay").onclick=()=>{closeModal();playIntro()};
+  $("#autoSpeak").onchange=e=>{S.settings.autoSpeak=e.target.checked;save()};
+  $$("#themeSeg button").forEach(b=>b.onclick=()=>{S.settings.theme=b.dataset.themeV;save();applyTheme();$$("#themeSeg button").forEach(x=>x.setAttribute("aria-pressed",x===b))});
+  const gr=$("#goalRange");
+  gr.oninput=()=>{S.settings.goal=+gr.value;$("#goalVal").textContent=gr.value;renderGoalMini();if(!SS&&cur==="ueben")renderHome()};
+  gr.onchange=()=>save();
+  const kp=()=>{const o=kochOrder(),l=kochLvl();$("#kochPrev").innerHTML=o.slice(0,16).map((i,n)=>`<span class="${n<l?"on":""}" title="${esc(i.lbl)}">${i.k}</span>`).join("")+(o.length>16?`<span class="more">…</span>`:"")};kp();
+  $$("#kochSeg button").forEach(b=>b.onclick=()=>{const v=b.dataset.ko;if(v==="rand"&&S.settings.kochOrder!=="rand")S.koch.perm=null;S.settings.kochOrder=v;save();openSettings()});
+  const ksh=$("#kochShuffle");if(ksh)ksh.onclick=()=>{S.koch.perm=null;kochOrder();save();kp();toast("Reihenfolge neu gemischt")};
+  $("#kochReset").onclick=()=>{S.koch={lvl:2,win:[]};save();toast("Koch-Methode startet wieder bei Stufe 2");if(!SS)render()};
+}
+$("#openSettings").onclick=openSettings;
+
+/* ---------- Dialog ---------- */
+let lastFocus=null;
+function openModal(html,cls){lastFocus=document.activeElement;$("#dlg").className="dlg"+(cls?" "+cls:"");$("#dlg").innerHTML=html;$("#modal").classList.add("on");$$("[data-close]",$("#dlg")).forEach(b=>b.onclick=closeModal);const f=$("#dlg button");if(f)f.focus()}
+function closeModal(){$("#modal").classList.remove("on");if(lastFocus&&lastFocus.focus&&document.contains(lastFocus))lastFocus.focus()}
+$("#modal").onclick=e=>{if(e.target.id==="modal")closeModal()};
+
+/* ---------- Tastatur ---------- */
+document.addEventListener("keydown",e=>{
+  if($("#modal").classList.contains("on")){if(e.key==="Escape")closeModal();return}
+  if(SS&&!SS.done){
+    if(e.key==="Escape"){finish();return}
+    if(SS.waiting&&e.key==="Enter"){e.preventDefault();SS.waiting=false;next();return}
+    const c=SS.cur;if(!c||c.intro||SS.locked)return;
+    if(c.dir==="listen"&&e.key===" "&&!SS.revealed){e.preventDefault();say(c.item.k);return}
+    if(c.fmt==="card"){
+      if(!SS.revealed&&(e.key===" "||e.key==="Enter")){e.preventDefault();flip()}
+      else if(SS.revealed&&(e.key==="1"||e.key==="ArrowLeft")){e.preventDefault();answer(false,null)}
+      else if(SS.revealed&&(e.key==="2"||e.key==="ArrowRight")){e.preventDefault();answer(true,null)}
+    }else if(c.fmt==="mc"&&/^[1-4]$/.test(e.key)){const b=$$(".opt")[+e.key-1];if(b)b.click()}
+    return;
+  }
+  if(cur==="ueben"&&!SS&&e.key==="Enter"&&document.activeElement===document.body){const b=$("#startSrs");if(b){e.preventDefault();b.click()}}
+});
+
+/* ---------- Start ---------- */
+/* Hell/Dunkel: "auto" übernimmt, was die Umgebung bzw. das System vorgibt */
+const HOST_THEME=document.documentElement.getAttribute("data-theme");
+function applyTheme(){const t=S.settings.theme||"auto",r=document.documentElement;if(t==="auto"){if(HOST_THEME)r.setAttribute("data-theme",HOST_THEME);else r.removeAttribute("data-theme")}else r.setAttribute("data-theme",t)}
+applyTheme();
+try{new MutationObserver(()=>{const t=S.settings.theme||"auto",r=document.documentElement;if(t!=="auto"&&r.getAttribute("data-theme")!==t)r.setAttribute("data-theme",t)}).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]})}catch(e){}
+/* ---------- Intro-Animation ---------- */
+function playIntro(){
+  const old=$("#intro");if(old)old.remove();
+  const reduced=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const cols=Math.max(8,Math.round(innerWidth/72)),rows=Math.max(6,Math.round(innerHeight/72))+1;
+  const pool=ITEMS.filter(i=>i.g==="basic").map(i=>i.k);
+  let grid="";for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){const dx=c-(cols-1)/2,dy=r-(rows-1)/2,dist=Math.sqrt(dx*dx+dy*dy);grid+=`<span style="--d:${(dist*.045).toFixed(2)}s">${pool[(Math.random()*pool.length)|0]}</span>`}
+  const word=[["ひ","hi"],["ら","ra"],["が","ga"],["な","na"]].map(([k,r],n)=>`<span class="i-ch" style="--d:${(.3+n*.17).toFixed(2)}s">${k}<small>${r}</small></span>`).join("");
+  const el=document.createElement("div");el.id="intro";el.setAttribute("aria-hidden","true");el.style.setProperty("--cols",cols);
+  el.innerHTML=`<div class="i-grid">${grid}</div><div class="i-center"><div class="i-word">${word}</div><div class="i-line"></div><div class="i-sub">Trainer</div></div><button class="i-skip" type="button">Überspringen</button>`;
+  document.body.appendChild(el);
+  let done=false;
+  const end=()=>{if(done)return;done=true;el.classList.add("out");setTimeout(()=>el.remove(),700);document.removeEventListener("keydown",key,true)};
+  const key=e=>{e.preventDefault();e.stopPropagation();end()};
+  el.addEventListener("click",end);document.addEventListener("keydown",key,true);
+  setTimeout(end,reduced?1200:3100);
+}
+(function boot(){
+  if(S.settings.intro!==false)playIntro();
+  const h=location.hash.slice(1);if(VIEWS.includes(h))cur=h;
+  go(cur,false);
+  setTimeout(async()=>{
+    try{if(window.claude&&window.claude.use){const t=await window.claude.use("tts");if(t){TTS=t;if(!SS)render()}}}catch(e){}
+    initRemote();
+  },0);
+})();
+</script>
+<script>
+/* Offline-Betrieb: Service Worker registrieren (nur auf https bzw. localhost wirksam) */
+if("serviceWorker" in navigator&&location.protocol!=="file:"){addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}
+</script>
+</body>
+</html>
